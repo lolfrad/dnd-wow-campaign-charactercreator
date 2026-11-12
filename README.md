@@ -1,3 +1,28 @@
+# Azeroth Token Forge — local character creator
+
+This fork includes a working retail Warcraft character creator and transparent D&D token exporter in [`app/`](app/). It reuses the viewer library below, with a TypeScript frontend and a restricted, cached local asset server.
+
+**Windows quick start:** double-click **[`Launch Token Forge.cmd`](Launch%20Token%20Forge.cmd)** in this folder. It installs its own portable Node.js/npm and project dependencies on first use, prepares the website, starts the local server, then opens your browser. No PowerShell commands or administrator installation are needed.
+
+Double-click **[`Stop Token Forge.cmd`](Stop%20Token%20Forge.cmd)** to stop it. Launching again reopens the existing server. Setup and server logs are in `.cache/launcher/`.
+
+For development with Node.js 24 already on your PATH:
+
+```powershell
+npm ci
+npm run dev
+```
+
+Open **http://127.0.0.1:5173**. The single development command starts the frontend and asset backend. First use needs internet access to the public Wowhead/Zam assets; no WoW installation, account, API key, or paid service is needed.
+
+Choose a category on the left and a visual thumbnail on the right. Race includes Male/Female bodies; Head and Body provide model-specific customizations; Armor and Weapons have slot, material/type and search filters; Poses shows actual animation stills. Export transparent 512/1024 pixel tokens with optional colored outlines, native texture quality and supersampling. Characters save in this browser; **Save JSON** and **Import character** move configurations between browsers or computers.
+
+The **NPC** tab adds existing NPCs, monsters and bosses with model previews, posing and token export. Supported humanoid rigs also accept equipment changes. The local database indexes **52,687 equipment looks** and **22,054 NPC/creature looks** with paginated search, icon filters, rarity and expansion. The Token panel exports transparent animated **WebM/WebP**, with a pose-animation toggle for effects-only recordings. Undo/redo and standard Ctrl/Cmd shortcuts cover editor changes.
+
+See the [application guide](app/README.md) for setup, architecture, data format, and limitations, and the [verification record](app/VERIFICATION.md) for actual race/item coverage and browser checks. The original reusable library and its documentation remain below.
+
+---
+
 ![Mirror Demo](https://miorey.github.io/wow-model-viewer/images/mirror.gif)
 
 # WoW Model viewer
@@ -488,5 +513,5 @@ Each contribution to this lib have to take in account js doc and typescript
 To generate the TypecSript declaration please execute the following:
 
 ```bash
-npm run prepublish
+npm run build:types
 ```

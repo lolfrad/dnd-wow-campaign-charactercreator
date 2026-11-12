@@ -8,6 +8,11 @@ class WowModelViewer extends ZamModelViewer {
      * @returns {Array.<string>}
      */
     getListAnimations() {
+        const actor = this.renderer.actors[0]
+        if (actor && typeof actor.getNumAnimations === `function` && typeof actor.getAnimation === `function`) {
+            return [...new Set(Array.from({length: actor.getNumAnimations()}, (_, index) => actor.getAnimation(index)).filter(Boolean))]
+        }
+        // Compatibility for older cached viewer releases.
         return [...new Set(this.renderer.actors[0].h.P.Q.map(e => e.l))]
     }
 
@@ -82,7 +87,7 @@ class WowModelViewer extends ZamModelViewer {
         const a = (slot === s.INVENTORY_TYPE_ROBE) ? s.INVENTORY_TYPE_CHEST : slot
 
         window.WH.debug(`Clearing model viewer slot:`, a.toString())
-        this.method(`clearSlots`, slot.toString())
+        this.method(`clearSlots`, a.toString())
         if (displayId) {
             window.WH.debug(`Attaching to model viewer slot:`, slot.toString(), `Display ID:`, displayId, `Enchant Visual:`, enchant)
             this.method(`setItems`, [[{

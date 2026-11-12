@@ -57,7 +57,6 @@ const characterPart = () => {
         Horns: (window.WOTLK_TO_RETAIL_DISPLAY_ID_API) ? undefined : `horns`,
         "Body Size": (window.WOTLK_TO_RETAIL_DISPLAY_ID_API) ? undefined : `bodySize`
     }
-    console.log(ret)
     return ret
 }
 
@@ -81,11 +80,21 @@ function optionalChaining(choice) {
  * @param {Array<Array<number>>} character.items - Description for items. (Optional)
  * @param {number} character.race - Description for race.
  * @param {number} character.skin - Description for skin.
+ * @param {Object.<string, number>} [character.customizations] - Stable retail option IDs mapped to choice IDs; bypasses the legacy label/index mapping.
  * @param {Object} fullOptions - Zaming API character options payload.
- * @return {[]}
+ * @return {Array.<{optionId: number, choiceId: number}>}
  */
 function getCharacterOptions(character, fullOptions) {
     const options = fullOptions.Options
+    // Retail callers can select every metadata option using stable IDs. Keep the
+    // original index-based interface for existing library consumers.
+    if (character.customizations) {
+        return options.flatMap(part => {
+            const choiceId = character.customizations[part.Id]
+            const choice = part.Choices.find(value => value.Id === choiceId)
+            return choice ? [{optionId: part.Id, choiceId: choice.Id}] : []
+        })
+    }
     const missingChoice = []
     const ret = []
     for (const prop in characterPart()) {

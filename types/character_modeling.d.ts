@@ -58,15 +58,16 @@ export function getDisplaySlot(item: number, slot: number, displayId: number, en
  * @return {[]}
  */
 export function getCharacterOptions(character: {
-    face: number;
-    facialStyle: number;
-    gender: number;
-    hairColor: number;
-    hairStyle: number;
-    items: Array<Array<number>>;
-    race: number;
-    skin: number;
-}, fullOptions: any): [];
+    face?: number;
+    facialStyle?: number;
+    gender?: number;
+    hairColor?: number;
+    hairStyle?: number;
+    items?: Array<Array<number>>;
+    race?: number;
+    skin?: number;
+    customizations?: Record<string, number>;
+}, fullOptions: any): Array<{ optionId: number; choiceId: number }>;
 export function characterPart(): {
     Face: string;
     "Skin Color": string;

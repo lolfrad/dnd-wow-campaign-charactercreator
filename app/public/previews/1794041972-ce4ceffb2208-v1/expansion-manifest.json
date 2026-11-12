@@ -1,0 +1,889 @@
+{
+  "snapshot": "1794041972-ce4ceffb2208-v1",
+  "build": "12.1.5.70783",
+  "generatedAt": "2026-11-11T17:53:37.925Z",
+  "results": [
+    {
+      "file": "npc-68025-38689",
+      "label": "Thrall",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-68025-38689",
+          "npcId": 68025,
+          "displayId": 38689,
+          "name": "Thrall",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 43722
+    },
+    {
+      "file": "npc-131357-80016",
+      "label": "Jaina Proudmoore",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-131357-80016",
+          "npcId": 131357,
+          "displayId": 80016,
+          "name": "Jaina Proudmoore",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 34358
+    },
+    {
+      "file": "npc-173147-96935",
+      "label": "Sylvanas Windrunner",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-173147-96935",
+          "npcId": 173147,
+          "displayId": 96935,
+          "name": "Sylvanas Windrunner",
+          "title": "",
+          "category": "boss",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 40027
+    },
+    {
+      "file": "npc-55500-39183",
+      "label": "Illidan Stormrage",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-55500-39183",
+          "npcId": 55500,
+          "displayId": 39183,
+          "name": "Illidan Stormrage",
+          "title": "",
+          "category": "boss",
+          "family": "Mechanical",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 34772
+    },
+    {
+      "file": "npc-94164-16480",
+      "label": "The Lich King",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-94164-16480",
+          "npcId": 94164,
+          "displayId": 16480,
+          "name": "The Lich King",
+          "title": "",
+          "category": "boss",
+          "family": "Other",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 44249
+    },
+    {
+      "file": "npc-11502-11121",
+      "label": "Ragnaros",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-11502-11121",
+          "npcId": 11502,
+          "displayId": 11121,
+          "name": "Ragnaros",
+          "title": "",
+          "category": "boss",
+          "family": "Elemental",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 56545
+    },
+    {
+      "file": "npc-202961-111765",
+      "label": "Onyxia",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-202961-111765",
+          "npcId": 202961,
+          "displayId": 111765,
+          "name": "Onyxia",
+          "title": "",
+          "category": "boss",
+          "family": "Dragonkin",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 47280
+    },
+    {
+      "file": "npc-94946-64712",
+      "label": "Arthas Menethil",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-94946-64712",
+          "npcId": 94946,
+          "displayId": 64712,
+          "name": "Arthas Menethil",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 50145
+    },
+    {
+      "file": "npc-46471-35435",
+      "label": "Deathwing",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-46471-35435",
+          "npcId": 46471,
+          "displayId": 35435,
+          "name": "Deathwing",
+          "title": "Aspect of Death",
+          "category": "creature",
+          "family": "Dragonkin",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 43302
+    },
+    {
+      "file": "npc-192535-3167",
+      "label": "Stormwind City Guard",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-192535-3167",
+          "npcId": 192535,
+          "displayId": 3167,
+          "name": "Stormwind City Guard",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 36921
+    },
+    {
+      "file": "npc-89-87778",
+      "label": "Infernal",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-89-87778",
+          "npcId": 89,
+          "displayId": 87778,
+          "name": "Infernal",
+          "title": "",
+          "category": "creature",
+          "family": "Demon",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 64875
+    },
+    {
+      "file": "npc-113225-519",
+      "label": "Ghoul",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-113225-519",
+          "npcId": 113225,
+          "displayId": 519,
+          "name": "Ghoul",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 58076
+    },
+    {
+      "file": "npc-79378-55064",
+      "label": "Ogre",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-79378-55064",
+          "npcId": 79378,
+          "displayId": 55064,
+          "name": "Ogre",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 66340
+    },
+    {
+      "file": "npc-150228-3619",
+      "label": "Murloc Spearhunter",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-150228-3619",
+          "npcId": 150228,
+          "displayId": 3619,
+          "name": "Murloc Spearhunter",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 55478
+    },
+    {
+      "file": "npc-79059-54862",
+      "label": "\"Doc\" Cogspin",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-79059-54862",
+          "npcId": 79059,
+          "displayId": 54862,
+          "name": "\"Doc\" Cogspin",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 61718
+    },
+    {
+      "file": "npc-86164-36767",
+      "label": "\"Doc\" Schweitzer",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-86164-36767",
+          "npcId": 86164,
+          "displayId": 36767,
+          "name": "\"Doc\" Schweitzer",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 39064
+    },
+    {
+      "file": "npc-86881-61057",
+      "label": "\"Doc\" Schweitzer",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-86881-61057",
+          "npcId": 86881,
+          "displayId": 61057,
+          "name": "\"Doc\" Schweitzer",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 38580
+    },
+    {
+      "file": "npc-247137-91983",
+      "label": "\"Don't Die\" Dyona",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-247137-91983",
+          "npcId": 247137,
+          "displayId": 91983,
+          "name": "\"Don't Die\" Dyona",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 30501
+    },
+    {
+      "file": "npc-133799-83035",
+      "label": "\"Sinker\"",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-133799-83035",
+          "npcId": 133799,
+          "displayId": 83035,
+          "name": "\"Sinker\"",
+          "title": "",
+          "category": "npc",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 30766
+    },
+    {
+      "file": "npc-112960-31006",
+      "label": "Abomination",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-112960-31006",
+          "npcId": 112960,
+          "displayId": 31006,
+          "name": "Abomination",
+          "title": "",
+          "category": "creature",
+          "family": "Undead",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 57774
+    },
+    {
+      "file": "npc-81568-52600",
+      "label": "Cursed Wolf",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-81568-52600",
+          "npcId": 81568,
+          "displayId": 52600,
+          "name": "Cursed Wolf",
+          "title": "",
+          "category": "creature",
+          "family": "Beast",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 55748
+    },
+    {
+      "file": "npc-73323-52598",
+      "label": "Frost Wolf",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-73323-52598",
+          "npcId": 73323,
+          "displayId": 52598,
+          "name": "Frost Wolf",
+          "title": "",
+          "category": "creature",
+          "family": "Beast",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 57611
+    },
+    {
+      "file": "npc-32841-16189",
+      "label": "Baby Blizzard Bear",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-32841-16189",
+          "npcId": 32841,
+          "displayId": 16189,
+          "name": "Baby Blizzard Bear",
+          "title": "",
+          "category": "creature",
+          "family": "Companion",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 76515
+    },
+    {
+      "file": "npc-105318-69092",
+      "label": "Ancient Catacomb Spider",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-105318-69092",
+          "npcId": 105318,
+          "displayId": 69092,
+          "name": "Ancient Catacomb Spider",
+          "title": "",
+          "category": "creature",
+          "family": "Companion",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 41526
+    },
+    {
+      "file": "npc-160394-1157",
+      "label": "Barrow Spider",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-160394-1157",
+          "npcId": 160394,
+          "displayId": 1157,
+          "name": "Barrow Spider",
+          "title": "",
+          "category": "creature",
+          "family": "Beast",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 34955
+    },
+    {
+      "file": "npc-91270-62374",
+      "label": "Dread Infernal",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-91270-62374",
+          "npcId": 91270,
+          "displayId": 62374,
+          "name": "Dread Infernal",
+          "title": "",
+          "category": "creature",
+          "family": "Demon",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 65758
+    },
+    {
+      "file": "npc-167362-96208",
+      "label": "Bony Skeleton",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-167362-96208",
+          "npcId": 167362,
+          "displayId": 96208,
+          "name": "Bony Skeleton",
+          "title": "",
+          "category": "creature",
+          "family": "Undead",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 37462
+    },
+    {
+      "file": "npc-138900-86109",
+      "label": "Risen Skeleton",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-138900-86109",
+          "npcId": 138900,
+          "displayId": 86109,
+          "name": "Risen Skeleton",
+          "title": "",
+          "category": "creature",
+          "family": "Undead",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 30817
+    },
+    {
+      "file": "npc-83094-52694",
+      "label": "Boar (Brown)",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-83094-52694",
+          "npcId": 83094,
+          "displayId": 52694,
+          "name": "Boar (Brown)",
+          "title": "",
+          "category": "creature",
+          "family": "Beast",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 58908
+    },
+    {
+      "file": "npc-190263-1305",
+      "label": "\"Captain\" Cookie",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-190263-1305",
+          "npcId": 190263,
+          "displayId": 1305,
+          "name": "\"Captain\" Cookie",
+          "title": "",
+          "category": "boss",
+          "family": "Humanoid",
+          "classification": 0,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 54825
+    },
+    {
+      "file": "npc-98208-65794",
+      "label": "Advisor Vandros",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-98208-65794",
+          "npcId": 98208,
+          "displayId": 65794,
+          "name": "Advisor Vandros",
+          "title": "",
+          "category": "boss",
+          "family": "Humanoid",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 43279
+    },
+    {
+      "file": "npc-154728-20510",
+      "label": "Aeonus",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-154728-20510",
+          "npcId": 154728,
+          "displayId": 20510,
+          "name": "Aeonus",
+          "title": "",
+          "category": "boss",
+          "family": "Demon",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 55028
+    },
+    {
+      "file": "npc-121594-76034",
+      "label": "Aggramar",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-121594-76034",
+          "npcId": 121594,
+          "displayId": 76034,
+          "name": "Aggramar",
+          "title": "",
+          "category": "boss",
+          "family": "Giant",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 44794
+    },
+    {
+      "file": "npc-154427-78488",
+      "label": "Aggramar",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-154427-78488",
+          "npcId": 154427,
+          "displayId": 78488,
+          "name": "Aggramar",
+          "title": "",
+          "category": "boss",
+          "family": "Humanoid",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 43711
+    },
+    {
+      "file": "npc-117193-74482",
+      "label": "Agronox",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-117193-74482",
+          "npcId": 117193,
+          "displayId": 74482,
+          "name": "Agronox",
+          "title": "Corrupted Caretaker",
+          "category": "boss",
+          "family": "Elemental",
+          "classification": 1,
+          "canEquip": false,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 49452
+    },
+    {
+      "file": "npc-87450-56033",
+      "label": "Ahri'ok Dugru",
+      "scene": {
+        "kind": "npc",
+        "npc": {
+          "id": "npc-87450-56033",
+          "npcId": 87450,
+          "displayId": 56033,
+          "name": "Ahri'ok Dugru",
+          "title": "",
+          "category": "boss",
+          "family": "Humanoid",
+          "classification": 1,
+          "canEquip": true,
+          "modelType": 8,
+          "build": "12.1.5.70783"
+        }
+      },
+      "ok": true,
+      "bytes": 49488
+    },
+    {
+      "file": "look-972-15",
+      "label": "Bow of Searing Arrows",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-972-15"
+      },
+      "ok": true,
+      "bytes": 10186
+    },
+    {
+      "file": "look-4507-26",
+      "label": "Blastershot Launcher",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-4507-26"
+      },
+      "ok": true,
+      "bytes": 22194
+    },
+    {
+      "file": "look-5420-26",
+      "label": "Ashjre'thul, Crossbow of Smiting",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-5420-26"
+      },
+      "ok": true,
+      "bytes": 26064
+    },
+    {
+      "file": "look-31423-17",
+      "label": "Eagletalon Spear",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-31423-17"
+      },
+      "ok": true,
+      "bytes": 14382
+    },
+    {
+      "file": "look-27350-21",
+      "label": "Claws of Ursoc",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-27350-21"
+      },
+      "ok": true,
+      "bytes": 52035
+    },
+    {
+      "file": "look-5383-26",
+      "label": "Cold Snap",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-5383-26"
+      },
+      "ok": true,
+      "bytes": 16306
+    },
+    {
+      "file": "look-28914-21",
+      "label": "Aldrachi Warblades",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-28914-21"
+      },
+      "ok": true,
+      "bytes": 31491
+    },
+    {
+      "file": "look-2275-25",
+      "label": "Balanced Throwing Dagger",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-2275-25"
+      },
+      "ok": true,
+      "bytes": 22340
+    },
+    {
+      "file": "look-5113-23",
+      "label": "Ancient Cornerstone Grimoire",
+      "scene": {
+        "kind": "gear",
+        "itemId": "look-5113-23"
+      },
+      "ok": true,
+      "bytes": 80721
+    }
+  ]
+}

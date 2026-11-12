@@ -36,6 +36,12 @@ describe(`WowModelViewer`, () => {
 
 
     describe(`getListAnimations`, () => {
+        it(`uses modern public animation enumeration and removes duplicates`, () => {
+            const actor = viewer.renderer.actors[0]
+            actor.getNumAnimations = () => 4
+            actor.getAnimation = index => [`Stand`, `Run`, `Run`, ``][index]
+            expect(viewer.getListAnimations()).toEqual([`Stand`, `Run`])
+        })
         it(`should return an array of animation names`, () => {
             const animations = viewer.getListAnimations()
             expect(animations[0]).toBe(`animation1`)

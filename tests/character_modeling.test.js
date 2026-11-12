@@ -19,6 +19,15 @@ describe(`Retail and WotLK compatibility`, () => {
 })
 
 describe(`Character Modeling functions`, () => {
+    test(`stable retail IDs expose options outside the legacy English-label mapping`, () => {
+        const result = getCharacterOptions({customizations: {987: 54321, 988: 999}}, {
+            Options: [
+                {Id: 987, Name: `An additional retail feature`, Choices: [{Id: 54320}, {Id: 54321}]},
+                {Id: 988, Name: `Another option`, Choices: [{Id: 54322}]}
+            ]
+        })
+        expect(result).toEqual([{optionId: 987, choiceId: 54321}])
+    })
     beforeEach(() => {
         fetch.mockClear()
     })

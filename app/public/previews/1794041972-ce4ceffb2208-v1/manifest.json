@@ -1,0 +1,474 @@
+{
+  "snapshot": "1794041972-ce4ceffb2208-v1",
+  "generatedAt": "2026-11-09T21:08:47.556Z",
+  "results": [
+    {
+      "file": "race-1-0",
+      "label": "Human Body 1",
+      "bytes": 34714,
+      "ok": true
+    },
+    {
+      "file": "race-1-1",
+      "label": "Human Body 2",
+      "bytes": 26387,
+      "ok": true
+    },
+    {
+      "file": "race-2-0",
+      "label": "Orc Body 1",
+      "bytes": 56794,
+      "ok": true
+    },
+    {
+      "file": "race-2-1",
+      "label": "Orc Body 2",
+      "bytes": 31052,
+      "ok": true
+    },
+    {
+      "file": "race-3-0",
+      "label": "Dwarf Body 1",
+      "bytes": 50153,
+      "ok": true
+    },
+    {
+      "file": "race-3-1",
+      "label": "Dwarf Body 2",
+      "bytes": 37945,
+      "ok": true
+    },
+    {
+      "file": "race-4-0",
+      "label": "Night Elf Body 1",
+      "bytes": 32687,
+      "ok": true
+    },
+    {
+      "file": "race-4-1",
+      "label": "Night Elf Body 2",
+      "bytes": 27021,
+      "ok": true
+    },
+    {
+      "file": "race-5-0",
+      "label": "Undead Body 1",
+      "bytes": 30378,
+      "ok": true
+    },
+    {
+      "file": "race-5-1",
+      "label": "Undead Body 2",
+      "bytes": 28940,
+      "ok": true
+    },
+    {
+      "file": "race-6-0",
+      "label": "Tauren Body 1",
+      "bytes": 43756,
+      "ok": true
+    },
+    {
+      "file": "race-6-1",
+      "label": "Tauren Body 2",
+      "bytes": 31729,
+      "ok": true
+    },
+    {
+      "file": "race-7-0",
+      "label": "Gnome Body 1",
+      "bytes": 47397,
+      "ok": true
+    },
+    {
+      "file": "race-7-1",
+      "label": "Gnome Body 2",
+      "bytes": 33668,
+      "ok": true
+    },
+    {
+      "file": "race-8-0",
+      "label": "Troll Body 1",
+      "bytes": 39602,
+      "ok": true
+    },
+    {
+      "file": "race-8-1",
+      "label": "Troll Body 2",
+      "bytes": 27031,
+      "ok": true
+    },
+    {
+      "file": "race-9-0",
+      "label": "Goblin Body 1",
+      "bytes": 41646,
+      "ok": true
+    },
+    {
+      "file": "race-9-1",
+      "label": "Goblin Body 2",
+      "bytes": 45008,
+      "ok": true
+    },
+    {
+      "file": "race-10-0",
+      "label": "Blood Elf Body 1",
+      "bytes": 27773,
+      "ok": true
+    },
+    {
+      "file": "race-10-1",
+      "label": "Blood Elf Body 2",
+      "bytes": 25048,
+      "ok": true
+    },
+    {
+      "file": "race-11-0",
+      "label": "Draenei Body 1",
+      "bytes": 43809,
+      "ok": true
+    },
+    {
+      "file": "race-11-1",
+      "label": "Draenei Body 2",
+      "bytes": 28007,
+      "ok": true
+    },
+    {
+      "file": "race-22-0",
+      "label": "Worgen Body 1",
+      "bytes": 41655,
+      "ok": true
+    },
+    {
+      "file": "race-22-1",
+      "label": "Worgen Body 2",
+      "bytes": 27389,
+      "ok": true
+    },
+    {
+      "file": "race-24-0",
+      "label": "Pandaren Body 1",
+      "bytes": 52029,
+      "ok": true
+    },
+    {
+      "file": "race-24-1",
+      "label": "Pandaren Body 2",
+      "bytes": 32704,
+      "ok": true
+    },
+    {
+      "file": "race-27-0",
+      "label": "Nightborne Body 1",
+      "bytes": 26571,
+      "ok": true
+    },
+    {
+      "file": "race-27-1",
+      "label": "Nightborne Body 2",
+      "bytes": 24017,
+      "ok": true
+    },
+    {
+      "file": "race-28-0",
+      "label": "Highmountain Tauren Body 1",
+      "bytes": 47786,
+      "ok": true
+    },
+    {
+      "file": "race-28-1",
+      "label": "Highmountain Tauren Body 2",
+      "bytes": 34736,
+      "ok": true
+    },
+    {
+      "file": "race-29-0",
+      "label": "Void Elf Body 1",
+      "bytes": 27276,
+      "ok": true
+    },
+    {
+      "file": "race-29-1",
+      "label": "Void Elf Body 2",
+      "bytes": 25076,
+      "ok": true
+    },
+    {
+      "file": "race-30-0",
+      "label": "Lightforged Draenei Body 1",
+      "bytes": 42981,
+      "ok": true
+    },
+    {
+      "file": "race-30-1",
+      "label": "Lightforged Draenei Body 2",
+      "bytes": 27568,
+      "ok": true
+    },
+    {
+      "file": "race-31-0",
+      "label": "Zandalari Troll Body 1",
+      "bytes": 30677,
+      "ok": true
+    },
+    {
+      "file": "race-31-1",
+      "label": "Zandalari Troll Body 2",
+      "bytes": 23984,
+      "ok": true
+    },
+    {
+      "file": "race-32-0",
+      "label": "Kul Tiran Body 1",
+      "bytes": 38301,
+      "ok": true
+    },
+    {
+      "file": "race-32-1",
+      "label": "Kul Tiran Body 2",
+      "bytes": 31185,
+      "ok": true
+    },
+    {
+      "file": "race-34-0",
+      "label": "Dark Iron Dwarf Body 1",
+      "bytes": 48456,
+      "ok": true
+    },
+    {
+      "file": "race-34-1",
+      "label": "Dark Iron Dwarf Body 2",
+      "bytes": 33885,
+      "ok": true
+    },
+    {
+      "file": "race-35-0",
+      "label": "Vulpera Body 1",
+      "bytes": 41541,
+      "ok": true
+    },
+    {
+      "file": "race-35-1",
+      "label": "Vulpera Body 2",
+      "bytes": 37803,
+      "ok": true
+    },
+    {
+      "file": "race-36-0",
+      "label": "Mag'har Orc Body 1",
+      "bytes": 45978,
+      "ok": true
+    },
+    {
+      "file": "race-36-1",
+      "label": "Mag'har Orc Body 2",
+      "bytes": 25680,
+      "ok": true
+    },
+    {
+      "file": "race-37-0",
+      "label": "Mechagnome Body 1",
+      "bytes": 49327,
+      "ok": true
+    },
+    {
+      "file": "race-37-1",
+      "label": "Mechagnome Body 2",
+      "bytes": 44734,
+      "ok": true
+    },
+    {
+      "file": "race-52-0",
+      "label": "Dracthyr Body 1",
+      "bytes": 47188,
+      "ok": true
+    },
+    {
+      "file": "race-75-0",
+      "label": "Visage Body 1",
+      "bytes": 28187,
+      "ok": true
+    },
+    {
+      "file": "race-75-1",
+      "label": "Visage Body 2",
+      "bytes": 26811,
+      "ok": true
+    },
+    {
+      "file": "race-84-0",
+      "label": "Earthen Body 1",
+      "bytes": 51536,
+      "ok": true
+    },
+    {
+      "file": "race-84-1",
+      "label": "Earthen Body 2",
+      "bytes": 38640,
+      "ok": true
+    },
+    {
+      "file": "race-86-0",
+      "label": "Haranir Body 1",
+      "bytes": 29978,
+      "ok": true
+    },
+    {
+      "file": "race-86-1",
+      "label": "Haranir Body 2",
+      "bytes": 29893,
+      "ok": true
+    },
+    {
+      "file": "item-16955",
+      "label": "Judgment Crown",
+      "bytes": 62717,
+      "ok": true
+    },
+    {
+      "file": "item-10041",
+      "label": "Dreamweave Circlet",
+      "bytes": 66573,
+      "ok": true
+    },
+    {
+      "file": "item-16953",
+      "label": "Judgment Spaulders",
+      "bytes": 82734,
+      "ok": true
+    },
+    {
+      "file": "item-16669",
+      "label": "Pauldrons of Elements",
+      "bytes": 87838,
+      "ok": true
+    },
+    {
+      "file": "item-16958",
+      "label": "Judgment Breastplate",
+      "bytes": 35140,
+      "ok": true
+    },
+    {
+      "file": "item-16916",
+      "label": "Netherwind Robes",
+      "bytes": 39803,
+      "ok": true
+    },
+    {
+      "file": "item-15064",
+      "label": "Warbear Harness",
+      "bytes": 35627,
+      "ok": true
+    },
+    {
+      "file": "item-16942",
+      "label": "Dragonstalker's Breastplate",
+      "bytes": 35689,
+      "ok": true
+    },
+    {
+      "file": "item-16954",
+      "label": "Judgment Legplates",
+      "bytes": 37864,
+      "ok": true
+    },
+    {
+      "file": "item-15065",
+      "label": "Warbear Woolies",
+      "bytes": 35217,
+      "ok": true
+    },
+    {
+      "file": "item-16956",
+      "label": "Judgment Gauntlets",
+      "bytes": 67267,
+      "ok": true
+    },
+    {
+      "file": "item-15063",
+      "label": "Devilsaur Gauntlets",
+      "bytes": 66915,
+      "ok": true
+    },
+    {
+      "file": "item-16957",
+      "label": "Judgment Sabatons",
+      "bytes": 66496,
+      "ok": true
+    },
+    {
+      "file": "item-16670",
+      "label": "Boots of Elements",
+      "bytes": 61892,
+      "ok": true
+    },
+    {
+      "file": "item-16952",
+      "label": "Judgment Belt",
+      "bytes": 87462,
+      "ok": true
+    },
+    {
+      "file": "item-13118",
+      "label": "Serpentine Sash",
+      "bytes": 88491,
+      "ok": true
+    },
+    {
+      "file": "item-13397",
+      "label": "Stoneskin Gargoyle Cape",
+      "bytes": 38484,
+      "ok": true
+    },
+    {
+      "file": "item-19019",
+      "label": "Thunderfury, Blessed Blade of the Windseeker",
+      "bytes": 16807,
+      "ok": true
+    },
+    {
+      "file": "item-19349",
+      "label": "Elementium Reinforced Bulwark",
+      "bytes": 44442,
+      "ok": true
+    },
+    {
+      "file": "item-18822",
+      "label": "Obsidian Edged Blade",
+      "bytes": 21219,
+      "ok": true
+    },
+    {
+      "file": "item-18803",
+      "label": "Hyperthermically Insulated Lava Dredger",
+      "bytes": 22603,
+      "ok": true
+    },
+    {
+      "file": "item-18842",
+      "label": "Staff of Dominance",
+      "bytes": 10797,
+      "ok": true
+    },
+    {
+      "file": "item-17068",
+      "label": "Deathbringer",
+      "bytes": 31418,
+      "ok": true
+    },
+    {
+      "file": "item-17070",
+      "label": "Fang of the Mystics",
+      "bytes": 18358,
+      "ok": true
+    },
+    {
+      "file": "item-18878",
+      "label": "Sorcerous Dagger",
+      "bytes": 17205,
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "catalogueSchemaVersion": 2,
+  "build": "12.1.5.70783",
+  "gameVersion": "12.1.5",
+  "importedAt": "2026-11-12T20:14:07.483Z",
+  "source": "Wago DB2 CSV",
+  "sources": [
+    {
+      "table": "ItemAppearance",
+      "url": "https://wago.tools/db2/ItemAppearance/csv?build=12.1.5.70783",
+      "rows": 65065,
+      "bytes": 2132184,
+      "sha256": "4b9c6c64a63b94bef55f64e4ea9606757b1aaa353a2a46ea3f2c921516a27b9c"
+    },
+    {
+      "table": "Item",
+      "url": "https://wago.tools/db2/Item/csv?build=12.1.5.70783",
+      "rows": 213950,
+      "bytes": 9104906,
+      "sha256": "9dc76656a83fa67f036b7748b29c534949f08ca7cdd9d861ee3317378a5ab7b3"
+    },
+    {
+      "table": "ItemSparse",
+      "url": "https://wago.tools/db2/ItemSparse/csv?build=12.1.5.70783",
+      "rows": 175791,
+      "bytes": 51699329,
+      "sha256": "89910dad9e9a56a4446a0f8ad9c64f79c10267c26ee4f866bd7265db32e433a8"
+    },
+    {
+      "table": "ItemSearchName",
+      "url": "https://wago.tools/db2/ItemSearchName/csv?build=12.1.5.70783",
+      "rows": 104395,
+      "bytes": 8642846,
+      "sha256": "822a100b79d90e4b2ee8df13ef539088dc057ce82ef8258ebe7a8f6d4b3ec13a"
+    },
+    {
+      "table": "ItemDisplayInfo",
+      "url": "https://wago.tools/db2/ItemDisplayInfo/csv?build=12.1.5.70783",
+      "rows": 181086,
+      "bytes": 13298528,
+      "sha256": "50bdc58f7bd04aa105fc458eebc3f5721f29b6a87b20d4784bc9174750ca26cc"
+    },
+    {
+      "table": "ItemModifiedAppearance",
+      "url": "https://wago.tools/db2/ItemModifiedAppearance/csv?build=12.1.5.70783",
+      "rows": 161324,
+      "bytes": 4387429,
+      "sha256": "5f9227e5a57fd6c4fe70e4684e4dda4222459a5b4754b6294828210b1d46b7d8"
+    },
+    {
+      "table": "CreatureDisplayInfo",
+      "url": "https://wago.tools/db2/CreatureDisplayInfo/csv?build=12.1.5.70783",
+      "rows": 121188,
+      "bytes": 10543310,
+      "sha256": "dba933dc70e936ffef2fd0877eb384068d816fb1e91adf4bf167a4ec349b6e7b"
+    },
+    {
+      "table": "Creature",
+      "url": "https://wago.tools/db2/Creature/csv?build=12.1.5.70783",
+      "rows": 23167,
+      "bytes": 1563559,
+      "sha256": "fbc828f3a355d9448aea86007801406cd5de00b8de1f7229476ce8996750d8bb"
+    },
+    {
+      "table": "ManifestInterfaceData",
+      "url": "https://wago.tools/db2/ManifestInterfaceData/csv?build=12.1.5.70783",
+      "rows": 142891,
+      "bytes": 9376595,
+      "sha256": "9436292e89b49ac62401053ed6c464002065cc54faeaa815addad17acc989a59"
+    },
+    {
+      "table": "JournalEncounterCreature",
+      "url": "https://wago.tools/db2/JournalEncounterCreature/csv?build=12.1.5.70783",
+      "rows": 1958,
+      "bytes": 85121,
+      "sha256": "888c0d3973e58a8fe1134f6314e75d3acf411005b1585c4dd02e3581292b1b68"
+    },
+    {
+      "table": "JournalEncounter",
+      "url": "https://wago.tools/db2/JournalEncounter/csv?build=12.1.5.70783",
+      "rows": 1161,
+      "bytes": 387654,
+      "sha256": "a1ea294c56801ee05fc5183f355c91b0fdd92ec93f9b9e41fb304a26d577b954"
+    }
+  ],
+  "counts": {
+    "items": 52687,
+    "npcs": 22054,
+    "excludedItemRows": 30003,
+    "equipmentFamilies": 26885,
+    "multiExpansionLooks": 3237,
+    "multiQualityLooks": 8701,
+    "savedAppearanceAliases": 34,
+    "missingNames": 28117,
+    "recoveredNameRows": 0,
+    "internalNames": 81,
+    "missingMappings": 53
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "azeroth-token-forge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "tsx server/index.ts",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/index.ts --production",
+    "test": "tsx --test tests/*.test.ts",
+    "test:browser": "playwright test",
+    "dev:refresh": "tsx server/index.ts --refresh-assets",
+    "verify:wardrobe": "tsx scripts/verify-wardrobe.ts",
+    "import:catalog": "node scripts/import-catalog.mjs"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.3",
+    "ffmpeg-static": "^5.3.0",
+    "jquery": "^3.7.1",
+    "sharp": "^0.35.5",
+    "sirv": "^3.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/jquery": "^3.5.33",
+    "@types/node": "^24.10.0",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
+  }
+}

@@ -1,1 +1,10 @@
 ./example
+node_modules/
+app/dist/
+.cache/
+.runtime/
+Token Forge.lnk
+app/test-results/
+app/test-results-interaction/
+app/test-results-*/
+app/playwright-report/
