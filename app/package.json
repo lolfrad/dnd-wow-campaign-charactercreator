@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "tsc --noEmit && vite build",
-    "build:pages": "tsc --noEmit && vite build --mode pages",
+    "build:pages": "npm run prepare:pages && tsc --noEmit && vite build --mode pages && node scripts/optimize-previews.mjs",
+    "prepare:pages": "node scripts/prepare-pages.mjs",
+    "dev:cloud": "npm run prepare:pages && vite --mode pages --host 127.0.0.1",
     "preview": "vite preview --host 127.0.0.1",
     "start": "tsx server/index.ts --production",
     "test": "tsx --test tests/*.test.ts",
@@ -19,6 +21,9 @@
     "import:catalog": "node scripts/import-catalog.mjs"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@supabase/supabase-js": "^2.119.0",
     "csv-parse": "^7.0.3",
     "ffmpeg-static": "^5.3.0",
     "jquery": "^3.7.1",

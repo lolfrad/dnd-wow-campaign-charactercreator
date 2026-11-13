@@ -30,9 +30,9 @@ Open [localhost:5173](http://127.0.0.1:5173). Internet access is needed to downl
 
 ## Online version and accounts
 
-GitHub Pages deployment is prepared for the interface. The online workshop still needs its cloud connection before it is ready to use. See the [deployment guide](app/DEPLOYMENT.md).
+The online version runs on GitHub Pages with Supabase accounts and online character storage. See the [deployment guide](app/DEPLOYMENT.md).
 
-Cloud accounts are the next step: username/password login, an online character library, autosave, **Save as copy**, and share links that require sign-in and show the latest saved build. Recipients will be able to save their own copy. These are planned, not connected yet. The current version keeps a browser draft; use **Save JSON** in the top bar to keep a character file. See the [cloud plan](app/CLOUD-PLAN.md) for the proposed setup.
+Sign in with a username and password to autosave builds online, open **My characters**, and use **Save as copy**. Share links require sign-in and open the latest saved build; recipients can save an independent copy. There is no email verification or password recovery, so keep your password safe. JSON import/download remains available as a backup. The separate local Node version still supports browser drafts. See the [cloud guide](app/CLOUD-PLAN.md) for details.
 
 More usage details are in the [application guide](app/README.md).
 

@@ -1,59 +1,67 @@
-# Publishing Token Forge
+# GitHub Pages and Supabase deployment
 
-## What is ready
+## Configured project
 
-The `Deploy Token Forge to GitHub Pages` workflow builds the frontend on Node.js 24 and publishes `app/dist`. Pushes to `main` or `master`, and manual workflow runs, trigger deployment. It reads the Pages base path automatically, including project URLs such as `/dnd-wow-campaign-charactercreator/`.
+This repository uses Supabase project `kqwzonlhrhcadutpvnwz`. Its URL and publishable key are in `src/data/cloud.json`; both are public client configuration. The database migrations and the `accounts` / `model-assets` functions are versioned under `../supabase/`.
 
-The brand link, bundles, preview images and preview iframe respect that path. Catalog queries, model assets and animation uploads use a separately configurable API address. Local development continues to use the same-origin local server.
+No separate Node server, paid host, email provider or SMTP service is needed for the Pages build. The normal local Node workflow remains available with `npm run dev`.
 
-No public server, database, accounts or Supabase resources have been created by this change.
+## Pages
 
-## Required GitHub settings
+1. Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
+2. Push to `master`/`main`, or run **Deploy Token Forge to GitHub Pages** manually.
+3. The workflow installs dependencies, runs app tests, generates static catalog data, builds the site and optimizes preview images, then publishes `app/dist`.
 
-1. In **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**. “Deploy from a branch” alone will not build this Vite app.
-2. Commit and push these changes to the default branch, or run the workflow manually after it exists on GitHub.
-3. The workflow’s deployment result provides the actual site URL. The expected project URL is `https://lolfrad.github.io/dnd-wow-campaign-charactercreator/` unless a custom domain is configured.
+The base path comes from the repository's Pages configuration. This project's expected URL is [Token Forge](https://lolfrad.github.io/dnd-wow-campaign-charactercreator/). Bundles, catalog chunks, previews, the preview iframe and the animation worker all respect the project path. Share links use hash routes and can be opened directly.
 
-The build needs no API secrets and does not download live game data. Supabase is not required to build the interface.
+The existing public configuration works without Actions variables. To use another project, set both `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as repository Actions variables, deploy the database/functions to that project, then rebuild. Empty variables fall back to the checked-in project configuration.
 
-## Why the workshop still needs an API
+`VITE_API_BASE_URL` is only for the traditional server path; it is not required for the Supabase Pages build. Never put a service-role key, database password or access token into a Vite variable or the public configuration file.
 
-GitHub Pages serves static files. The app relies on Node.js for bootstrap data, SQLite catalog searches, cached Warcraft assets, texture resizing and FFmpeg animation encoding. Those cannot run on Pages. Direct cross-origin requests to the upstream model host were rejected during verification, so pointing the browser at that host is not a working substitute for the asset server.
+## Supabase setup for another project
 
-Until an API is configured, the Pages build shows an unavailable message and disables the editor. A successful frontend deployment alone does not mean models or exports work online.
+Apply the migrations in `supabase/migrations`, in order, and deploy `accounts` and `model-assets` with the files in `supabase/functions`. The function runtime provides the project URL, anon key and service-role key. No extra function secrets are required for this configuration.
 
-Supabase can provide accounts, character storage and permission checks, but does not directly run this existing Node/SQLite/FFmpeg app. The preferred next step is to prototype a free-only replacement: static/browser-side catalog data, a Supabase Edge Function for model assets, and browser-side animation encoding. That would avoid a separate paid server, but is not implemented or verified yet. See [CLOUD-PLAN.md](CLOUD-PLAN.md).
+For CLI maintenance after authenticating and linking the correct project:
 
-Before implementing password forms on Pages, review GitHub’s guidance against sensitive transactions such as sending passwords. The selected username/password flow still involves passwords. The cloud plan records this as a hosting decision to resolve before public signup.
+```sh
+npx supabase db push
+npx supabase functions deploy accounts
+npx supabase functions deploy model-assets
+```
 
-## Connecting a hosted API later
+`verify_jwt = false` in function configuration is deliberate. The asset function verifies the user's JWT itself with Supabase Auth, supporting modern signing keys. The signup function accepts public signup requests and validates/rate-limits them before creating a confirmed account. Removing internal checks would expose the endpoints.
 
-This section describes connecting the current server contract. The preferred Supabase-only prototype may replace parts of that contract; do not buy a server or email service before validating it.
+The allowed browser origin is `https://lolfrad.github.io`, plus local test ports 4173, 5173 and 5174. For another owner/domain, update `supabase/functions/_shared/policy.ts` and redeploy. Update the snapshot/hash policy whenever the pinned game viewer changes.
 
-After the server is ready, add a repository **Actions variable** named `VITE_API_BASE_URL`, set to its HTTPS address, for example `https://models.example.com`. Then rebuild/redeploy. This value is public configuration, not a secret.
+## Test locally
 
-The server must provide the existing `/api/bootstrap`, `/api/catalog/*`, `/wow-assets/*` and `/api/export/animation` contracts. It also needs HTTPS, a public listen address, CORS restricted to the Pages origin, OPTIONS handling for JSON uploads, resource limits and Supabase session validation. Those server changes are deliberately deferred.
+```sh
+npm ci
+npm run dev:cloud --workspace app
+```
 
-Do not use `http://127.0.0.1:5173` as the public API address: it points to each visitor’s own computer. Do not expose the development server or launcher shutdown route publicly.
+Open the printed localhost address. This uses the real Supabase project, and saved characters are real online records. Use dedicated test accounts for automated checks.
 
-To test locally, copy `.env.example` to `.env.local`, supply the API address, and build with the desired base path:
+To test the production project path in PowerShell:
 
 ```powershell
 $env:VITE_BASE_PATH = '/dnd-wow-campaign-charactercreator/'
 npm run build:pages
-npm run preview --workspace app -- --port 4173
+npm run preview --workspace app -- --base /dnd-wow-campaign-charactercreator/ --port 4173
 ```
 
-Open `http://127.0.0.1:4173/dnd-wow-campaign-charactercreator/`. Without an API address, expect the unavailable state. Normal `npm run build` remains the build for the local Node server.
+Optional overrides are listed in `.env.example`. Username signup needs no email-confirmation or SMTP configuration; it uses the dedicated account function.
 
-Never put service-role keys, database passwords, SMTP passwords or private API tokens into `VITE_*` variables: Vite embeds them in public JavaScript.
+## Checks after publishing
 
-## Acceptance checks after connection
+- Signup/login gates the editor and restores a returning session.
+- A player and an NPC load through the authenticated asset function.
+- Catalog filters and variations work without a catalog API.
+- PNG, animated WebP and transparent WebM downloads work without a local server.
+- Autosave persists after reload, and My characters / copying / deletion behave correctly.
+- Another account cannot query private characters; a valid share link opens read-only and permits an independent copy.
+- Revoked links stop resolving. Expired sessions do not discard unsaved changes.
+- `preview-storage.json` reports the generated static preview size; these files do not consume Supabase Storage.
 
-- Open and reload the project URL: bundles, thumbnails and the preview iframe load under the repository path.
-- Load a player and an NPC and change equipment/variations.
-- Export transparent PNG, WebP and WebM from the live HTTPS site.
-- Verify username signup/login, session restoration and share-link returns on the deployed URL. Email verification and password recovery are intentionally excluded from the selected plan.
-- Test permissions with two accounts before enabling public signups.
-
-References: [Vite on GitHub Pages](https://vite.dev/guide/static-deploy#github-pages), [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits).
+See [CLOUD-PLAN.md](CLOUD-PLAN.md) for schema, cache policy, limits and the GitHub password-form hosting guidance.

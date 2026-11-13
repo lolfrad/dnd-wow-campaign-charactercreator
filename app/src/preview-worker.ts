@@ -6,9 +6,13 @@ import { modelFor } from "./customization";
 import { renderToken, renderThumbnail } from "./token";
 import wardrobeData from "./data/wardrobe.json";
 import { apiUrl } from "./runtime";
+import { cloudEnabled } from "./runtime";
+import { restoreSession } from "./cloud-client";
+import { dataRequest } from "./data-client";
 
 const wardrobe: WardrobeItem[] = wardrobeData;
-const data: Bootstrap = await (await fetch(apiUrl("/api/bootstrap"))).json();
+if (cloudEnabled) await restoreSession();
+const data: Bootstrap = await (await dataRequest("/api/bootstrap")).json();
 await ViewerAdapter.initialize(data);
 let adapter: ViewerAdapter | undefined,
   current: CharacterConfig | undefined,
@@ -27,8 +31,8 @@ async function render(scene: PreviewScene) {
   if (scene.kind === "gear") {
     let item = wardrobe.find((i) => i.id === scene.itemId);
     if (!item) {
-      const response = await fetch(
-        apiUrl(`/api/catalog/item/${encodeURIComponent(scene.itemId)}`),
+      const response = await dataRequest(
+        `/api/catalog/item/${encodeURIComponent(scene.itemId)}`,
       );
       if (response.ok) {
         item = await response.json();

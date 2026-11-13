@@ -1,7 +1,7 @@
 import type { PreviewScene } from "./catalog";
 import { previewKey, staticPreview, referenceScene } from "./catalog";
 import type { Bootstrap } from "./types";
-import { appUrl } from "./runtime";
+import { appUrl, cloudEnabled } from "./runtime";
 
 export class PreviewGallery {
   readonly stats = {
@@ -165,7 +165,13 @@ export class PreviewGallery {
       this.data.snapshot,
       await this.catalog,
     );
-    const url = preview ? appUrl(preview) : null;
+    const url = preview
+      ? appUrl(
+          cloudEnabled && import.meta.env.PROD
+            ? preview.replace(/\.png$/, ".webp")
+            : preview,
+        )
+      : null;
     if (url) {
       const exists = await new Promise<boolean>((resolve) => {
         const test = new Image();

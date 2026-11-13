@@ -11,3 +11,5 @@ app/playwright-report/
 .env
 .env.*
 !.env.example
+app/public/data/
+app/public/encoder/

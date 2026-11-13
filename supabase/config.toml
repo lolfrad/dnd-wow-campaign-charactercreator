@@ -1,0 +1,7 @@
+project_id = "token-forge"
+
+[functions.model-assets]
+verify_jwt = false # The function verifies user JWTs with Supabase Auth itself.
+
+[functions.accounts]
+verify_jwt = false # Signup is public, validated and rate limited inside the function.

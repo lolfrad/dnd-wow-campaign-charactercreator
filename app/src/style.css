@@ -178,6 +178,207 @@ h2 {
 .save-dot.disconnected {
   background: #a37f61;
 }
+.character-menu {
+  position: relative;
+  align-self: center;
+}
+.character-menu summary {
+  cursor: pointer;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.character-menu-content {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  background: #1b272e;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  width: 180px;
+  box-shadow: 0 8px 30px #0008;
+  z-index: 12;
+}
+.character-menu-content .document-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+.character-menu-content .document-button span {
+  display: inline;
+}
+.character-menu-content .mobile-character-action {
+  display: none;
+}
+@media (max-width: 600px) {
+  .cloud-workshop .document-actions > #new-character,
+  .cloud-workshop .document-actions > #save-copy,
+  .cloud-workshop .document-actions > #share-character {
+    display: none;
+  }
+  .character-menu-content .mobile-character-action {
+    display: inline-flex;
+  }
+}
+dialog {
+  color: #d8dedf;
+  background: #1b272e;
+  border: 1px solid #657078;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 20px 90px #0008;
+  max-width: calc(100vw - 32px);
+}
+dialog::backdrop {
+  background: #0b131bea;
+  backdrop-filter: blur(8px);
+}
+.account-dialog {
+  width: 420px;
+}
+.account-brand {
+  font-family: Georgia, serif;
+  color: var(--gold);
+  font-size: 28px;
+  margin-bottom: 26px;
+}
+.account-dialog h1 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+.account-dialog p,
+.sharing-dialog p,
+.shared-character p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.account-dialog form {
+  margin-top: 24px;
+  display: grid;
+  gap: 17px;
+}
+dialog label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+dialog input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #10191f;
+  color: inherit;
+}
+.account-dialog .secondary {
+  margin-top: 16px;
+}
+.account-dialog .account-note {
+  font-size: 12px;
+  margin: 0;
+}
+.account-error {
+  color: #f0ac8e !important;
+  line-height: 1.5;
+  min-height: 1em;
+}
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.dialog-heading button {
+  padding: 5px 8px;
+}
+.library-dialog {
+  width: 860px;
+  max-height: 85vh;
+  overflow: auto;
+}
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 18px;
+}
+.library-grid article {
+  display: grid;
+  gap: 5px;
+}
+.library-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-width: 0;
+}
+.library-card img,
+.library-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #111d25;
+  border-radius: 4px;
+}
+.library-placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 60px;
+  color: var(--gold);
+}
+.library-card strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.library-card small {
+  color: var(--muted);
+}
+.library-delete {
+  font-size: 11px;
+  justify-self: end;
+  color: #b6a59b;
+  padding: 5px;
+}
+.dialog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 25px;
+}
+.sharing-dialog {
+  width: 510px;
+}
+.sharing-dialog label {
+  margin: 18px 0;
+}
+.share-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+.share-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  font-size: 12px;
+}
+.shared-character {
+  display: grid;
+  gap: 16px;
+  padding: 15px 0;
+}
+.shared-character h2 {
+  font-size: 21px;
+}
 .header-actions {
   display: flex;
   align-items: center;

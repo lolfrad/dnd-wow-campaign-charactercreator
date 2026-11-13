@@ -1,6 +1,6 @@
 import type { CharacterConfig, Camera } from "./types";
 import type { ViewerAdapter } from "./viewer-adapter";
-import { apiUrl } from "./runtime";
+import { apiUrl, cloudEnabled } from "./runtime";
 import {
   renderToken,
   composeToken,
@@ -150,6 +150,17 @@ export async function recordAnimatedToken(
     });
     check();
     onProgress(0.9, `Encoding ${settings.format.toUpperCase()}…`);
+    if (cloudEnabled) {
+      const { encodeInBrowser } = await import("./browser-encoder");
+      const blob = await encodeInBrowser(
+        settings.format,
+        output,
+        signal,
+        onProgress,
+      );
+      onProgress(1, "Animation ready");
+      return { blob, frames: frames.length };
+    }
     const response = await fetch(apiUrl("/api/export/animation"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },

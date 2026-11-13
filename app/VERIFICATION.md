@@ -185,3 +185,14 @@ An arbitrary held animation frame is preserved for immediate export, but only it
 - Normal and Pages production builds passed TypeScript checking. A local Pages-subpath smoke check loaded the real model API, static thumbnails and preview iframe, then downloaded a PNG. CORS for this smoke check was simulated in the browser test; the current local server was not changed to support public hosting.
 - The Pages build without an API displayed its unavailable state and disabled editing. The top bar stayed within the viewport at 390, 600, 820, 1100 and 1920 pixels.
 - No live GitHub Pages deployment, hosted server, Supabase schema, login gate or cloud saving was created or verified. Direct upstream requests with a website Origin header returned HTTP 403; an asset API remains necessary. The cloud plan proposes validating Supabase Edge Functions and browser-side encoding to avoid a separate paid server.
+
+## 13 November 2026: live Supabase integration
+
+- Applied the versioned account/character/share schema and authenticated asset/signup functions to the selected Supabase project.
+- All 36 library tests and 31 app tests passed, including browser-catalog/SQL parity, ID aliases, autosave ordering/retry/conflicts and asset authorization/path checks.
+- Live checks with two temporary accounts passed: username signup/login, owner isolation, denied direct writes, HTTP 409 revision conflicts, current-version share resolution, recipient copying, revocation and private-thumbnail access.
+- The production build passed a full Edge browser workflow under `/dnd-wow-campaign-charactercreator/`, using the real Supabase project. It loaded an NPC, saved/reloaded online, downloaded PNG/WebP/WebM with effects, and opened/copied a shared character under a second account.
+- A browser-encoded WebM was decoded with native FFmpeg and contained transparent and visible pixels. Animated WebP contained multiple alpha-bearing frames. The browser encoder uses single-thread WebAssembly and transparent VP8 WebM; the local encoder remains native.
+- Cloud controls fit 390, 600, 820, 1100 and 1440 pixel viewports. The login session is the only persistent account state in localStorage; cloud builds do not write the local character-draft key.
+- The Pages build contains 1,158 optimized preview images: 46,943,226 source PNG bytes become 6,988,064 WebP bytes. Its complete static output is about 89 MiB. Shared previews stay on Pages; the Supabase thumbnail bucket is private and capped at 128 KiB per file.
+- Supabase advisor notices for authenticated SECURITY DEFINER RPCs and a default-deny private table are intentional and documented in CLOUD-PLAN.md. Ownership/token checks and locked search paths are exercised by live checks. Free-tier leaked-password protection is unavailable.

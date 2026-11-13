@@ -1,6 +1,6 @@
 # Azeroth Token Forge
 
-A Hero Forge-inspired Warcraft character workshop with NPC previews and transparent token exports. The interactive model is the retail ZamModelViewer, extended through this fork's `WowModelViewer` wrapper. The app is separate from the reusable root library. See [DEPLOYMENT.md](DEPLOYMENT.md) for GitHub Pages setup and [CLOUD-PLAN.md](CLOUD-PLAN.md) for the planned Supabase accounts and online character library.
+A Hero Forge-inspired Warcraft character workshop with NPC previews and transparent token exports. The interactive model is the retail ZamModelViewer, extended through this fork's `WowModelViewer` wrapper. The app is separate from the reusable root library. See [DEPLOYMENT.md](DEPLOYMENT.md) for GitHub Pages setup and [CLOUD-PLAN.md](CLOUD-PLAN.md) for Supabase accounts and the online character library.
 
 ## Windows setup
 
@@ -52,7 +52,7 @@ The Token panel also exports **transparent WebM video** and **animated WebP imag
 
 Undo/redo covers appearance, equipment, NPC/player changes, camera, token position, outlines, quality and animation settings. Repeated slider/name edits are grouped. Use **Ctrl/Cmd+Z**, **Ctrl+Y** or **Ctrl/Cmd+Shift+Z**; text inputs retain their native editing shortcuts. **Ctrl/Cmd+S** saves JSON, **Ctrl/Cmd+O** imports, **Ctrl/Cmd+E** exports PNG, and **Space** plays/holds the pose when the viewport has focus. History lasts for the current page session; the current configuration persists across reloads.
 
-Drag the viewport to rotate, scroll to zoom and right-drag to pan. The floating controls provide front, side, overhead and tilted views plus camera reset. The top bar contains the character name, New, Load JSON and Save JSON. The current version saves a browser draft automatically in localStorage; the planned cloud library will replace this with authenticated online saving. JSON import validates the schema, race/body, customization IDs, equipment conflicts and numeric ranges before replacing a character. Earlier version-1 saves receive default outline and quality settings when imported.
+Drag the viewport to rotate, scroll to zoom and right-drag to pan. The floating controls provide front, side, overhead and tilted views plus camera reset. The top bar contains the character name, New, Load JSON and Save JSON. The local Node workflow saves a browser draft automatically in localStorage. The Pages/cloud workflow requires sign-in and saves to Supabase instead, with My characters, Save as copy and authenticated live share links. JSON import validates the schema, race/body, customization IDs, equipment conflicts and numeric ranges before replacing a character. Earlier version-1 saves receive default outline and quality settings when imported.
 
 Race/body and wardrobe thumbnails ship with this asset snapshot, together with head/body/pose reference thumbnails for Human Male/Female, Orc Female and Tauren Male. Other previews are rendered lazily in an isolated real viewer and cached in this browser. Reference previews use neutral appearance/outfits and retain only a choice's required prerequisites, so unrelated edits do not invalidate the gallery. Visible tiles take priority. The renderer remains warm for a minute, and cached assets settle without the main viewer's conservative loading delays. **Refresh previews** in Settings clears the optional browser thumbnail cache.
 

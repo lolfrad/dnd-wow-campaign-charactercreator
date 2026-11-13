@@ -18,7 +18,12 @@ import { PreviewGallery } from "./previews";
 import { icon } from "./icons";
 import { recordAnimatedToken } from "./animated-token";
 import { weaponTypes, expansionNames } from "./equipment";
-import { apiBase, apiUrl, appUrl, isPages } from "./runtime";
+import { appUrl, cloudEnabled } from "./runtime";
+import { dataRequest } from "./data-client";
+import { supabase, currentUser } from "./cloud-client";
+import { cloudRepository, uploadThumbnail } from "./cloud-repository";
+import { DocumentStore, type CloudCharacter } from "./document-store";
+import { requireSignIn, showLibrary, showSharing } from "./cloud-ui";
 import {
   armorSlots,
   bodyName,
@@ -145,6 +150,9 @@ let catalogRequest = 0,
   catalogError = "",
   searchTimer: ReturnType<typeof setTimeout>;
 let recording: AbortController | undefined;
+let cloudDocument: DocumentStore | undefined,
+  thumbnailTimer: ReturnType<typeof setTimeout>;
+let activeCloudUser = "";
 const openTokenSections = new Set(["zoom"]);
 function tokenSection(id: string, label: string, content: string) {
   return `<details class="token-section" data-token-section="${id}" ${openTokenSections.has(id) ? "open" : ""}><summary>${label}</summary><div class="token-section-content">${content}</div></details>`;
@@ -184,6 +192,48 @@ $("#app").innerHTML = `
  <aside class="catalog-panel"><div class="catalog-heading"><span id="catalog-icon">${icon("race", 22)}</span><h1 id="catalog-title">Race</h1><button id="randomize" class="icon-button" title="Randomize appearance" aria-label="Randomize appearance">${icon("random", 20)}</button></div><div id="catalog-toolbar"></div><div id="catalog-scroll" class="catalog-scroll"><div id="catalog-content"></div></div></aside>
 </main><div id="notification" class="notification" role="status" hidden><span></span><button id="dismiss-notification" class="icon-button" aria-label="Dismiss">${icon("clear", 17)}</button></div><input id="json-file" type="file" accept=".json,application/json" hidden><span id="save-state" class="sr-only" aria-live="polite"></span>`;
 
+if (cloudEnabled) {
+  $("#app").classList.add("cloud-workshop");
+  const files = $(".document-actions");
+  const menu = document.createElement("details");
+  menu.className = "character-menu";
+  menu.innerHTML =
+    '<summary>More</summary><div class="character-menu-content"></div>';
+  menu.querySelector("div")!.append($("#import-json"), $("#save-json"));
+  for (const [id, label] of [
+    ["new-character", "New character"],
+    ["save-copy", "Save as copy"],
+    ["share-character", "Share"],
+  ]) {
+    const item = document.createElement("button");
+    item.className = "document-button mobile-character-action";
+    item.dataset.cloudAction = id;
+    item.textContent = label;
+    menu.querySelector("div")!.append(item);
+  }
+  for (const [id, label, glyph] of [
+    ["my-characters", "My characters", "import"],
+    ["save-copy", "Save as copy", "save"],
+    ["share-character", "Share", "export"],
+  ]) {
+    const button = document.createElement("button");
+    button.id = id;
+    button.className = "document-button";
+    button.disabled = true;
+    button.innerHTML = `${icon(glyph, 17)}<span>${label}</span>`;
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    files.append(button);
+  }
+  const signout = document.createElement("button");
+  signout.id = "sign-out";
+  signout.className = "document-button";
+  signout.textContent = "Sign out";
+  menu.querySelector("div")!.append(signout);
+  files.append(menu);
+  $("#document-status").textContent = "Sign in to save characters";
+}
+
 function notify(message: string, error = false) {
   clearTimeout(notificationTimer);
   const node = $("#notification");
@@ -207,6 +257,10 @@ function persist(group: string | false = "") {
   lastRecorded = structuredClone(config);
   $("#undo").toggleAttribute("disabled", busy || !history.length);
   $("#redo").toggleAttribute("disabled", busy || !future.length);
+  if (cloudDocument) {
+    cloudDocument.change(config);
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
     $("#save-dot").title = "Draft saved in this browser";
@@ -223,7 +277,7 @@ function setBusy(value: boolean, label = "Loading…") {
   $("#loading-label").textContent = label;
   document
     .querySelectorAll<HTMLButtonElement>(
-      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation",
+      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation,#my-characters,#save-copy,#share-character,#sign-out,[data-cloud-action]",
     )
     .forEach((node) => (node.disabled = value));
   if (!value && config) {
@@ -238,8 +292,21 @@ function setBusy(value: boolean, label = "Loading…") {
   document
     .querySelector("#cancel-recording")
     ?.toggleAttribute("hidden", !recording);
+  if (!value && cloudDocument?.readOnly) {
+    $(".category-rail")
+      .querySelectorAll<HTMLButtonElement>("button")
+      .forEach((button) => (button.disabled = true));
+    $("#import-json").setAttribute("disabled", "");
+    $("#undo").setAttribute("disabled", "");
+    $("#redo").setAttribute("disabled", "");
+    $("#share-character").setAttribute("disabled", "");
+  }
+  $<HTMLInputElement>("#character-name").readOnly = !!cloudDocument?.readOnly;
 }
 function header() {
+  document
+    .querySelectorAll<HTMLButtonElement>(".category-button")
+    .forEach((button) => (button.disabled = false));
   const { race, body } = modelFor(config, data);
   $("#character-subtitle").textContent = config.npc
     ? `${config.npc.name} · ${config.npc.family}`
@@ -276,6 +343,10 @@ function header() {
       ? "This model has a fixed appearance"
       : labels[id as Section];
   }
+  if (cloudDocument?.readOnly)
+    document
+      .querySelectorAll<HTMLButtonElement>(".category-button")
+      .forEach((button) => (button.disabled = true));
 }
 function navigate(next: Section) {
   section = next;
@@ -341,7 +412,7 @@ async function hydrateEquipment(value: unknown) {
   const results = await Promise.all(
     ids.map(async (id) => {
       if (wardrobe.some((item) => item.id === id)) return;
-      const response = await fetch(apiUrl(`/api/catalog/item/${id}`));
+      const response = await dataRequest(`/api/catalog/item/${id}`);
       if (response.ok) rememberItems([await response.json()]);
     }),
   );
@@ -352,7 +423,7 @@ function requestCatalogue(key: string) {
   requestedCatalog = key;
   catalogError = "";
   const request = ++catalogRequest;
-  void fetch(apiUrl(key))
+  void dataRequest(key)
     .then(async (response) => {
       const result = await response.json();
       if (!response.ok)
@@ -389,8 +460,8 @@ async function showVariations(item: WardrobeItem, activeSlot: Category) {
   };
   renderCatalog();
   try {
-    const response = await fetch(
-      apiUrl(`/api/catalog/variants/${encodeURIComponent(item.id)}`),
+    const response = await dataRequest(
+      `/api/catalog/variants/${encodeURIComponent(item.id)}`,
     );
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? "Variations unavailable");
@@ -442,6 +513,16 @@ function bodyGroupFor(option: Option) {
 }
 function renderCatalog(keepToolbar = false) {
   if (!config) return;
+  if (cloudDocument?.readOnly) {
+    $("#catalog-title").textContent = "Shared character";
+    $("#catalog-toolbar").innerHTML = "";
+    $("#randomize").hidden = true;
+    $("#item-variations").hidden = true;
+    $(".app-shell").classList.remove("variations-open");
+    $("#catalog-content").innerHTML =
+      `<div class="shared-character"><h2>${esc(config.name)}</h2><p>You are viewing a shared character. Save your own copy to customize it.</p><button id="save-shared-copy" class="primary wide">Save as copy</button><p>Shared links load the owner’s latest saved version.</p></div>`;
+    return;
+  }
   $("#catalog-title").textContent = labels[section];
   $("#catalog-icon").innerHTML = icon(section, 22);
   $("#randomize").hidden =
@@ -717,6 +798,7 @@ function renderCatalog(keepToolbar = false) {
       ["medium", "1024", "Balanced"],
       ["high", "Native", "Maximum"],
     ]
+      .filter(([id]) => !cloudEnabled || id === "high")
       .map(
         ([id, title, subtitle]) =>
           `<button class="quality-option ${config.settings.textureQuality === id ? "selected" : ""}" data-texture-quality="${id}" aria-pressed="${config.settings.textureQuality === id}"><strong>${title}</strong><span>${subtitle}</span></button>`,
@@ -826,6 +908,7 @@ document.addEventListener(
   true,
 );
 async function replaceViewer(next: CharacterConfig, preserveView = false) {
+  if (cloudEnabled) next.settings.textureQuality = "high";
   const view = preserveView ? adapter?.snapshotView() : undefined;
   const pose = preserveView ? adapter?.snapshotPose() : undefined;
   const host = document.createElement("div");
@@ -942,6 +1025,22 @@ function showToken(url: string) {
       image.src = url;
       image.hidden = false;
     }
+  }
+  if (cloudDocument && !cloudDocument.readOnly) {
+    clearTimeout(thumbnailTimer);
+    const captured = JSON.stringify(config);
+    thumbnailTimer = setTimeout(() => {
+      const record = cloudDocument?.document;
+      if (
+        record &&
+        !cloudDocument?.dirty &&
+        tokenUrl === url &&
+        JSON.stringify(config) === captured
+      )
+        void uploadThumbnail(record, url).catch((error) =>
+          console.info("Optional thumbnail was not saved", error),
+        );
+    }, 5000);
   }
 }
 function composePreview() {
@@ -1118,6 +1217,11 @@ document.addEventListener("keydown", (event) => {
   let action = "";
   if (modifier && !event.altKey) {
     const key = event.key.toLowerCase();
+    if (key === "s" && cloudDocument) {
+      event.preventDefault();
+      void cloudDocument.flush().catch((error) => notify(error.message, true));
+      return;
+    }
     if (key === "s") action = "save-json";
     else if (key === "o") action = "import-json";
     else if (!editing && key === "z") action = event.shiftKey ? "redo" : "undo";
@@ -1139,6 +1243,10 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("click", async (event) => {
   const target = (event.target as HTMLElement).closest<HTMLElement>("button");
   if (!target || target.hasAttribute("disabled")) return;
+  if (target.dataset.cloudAction) {
+    $<HTMLButtonElement>(`#${target.dataset.cloudAction}`).click();
+    return;
+  }
   if (target.id === "dismiss-notification") {
     $("#notification").hidden = true;
     return;
@@ -1148,6 +1256,78 @@ document.addEventListener("click", async (event) => {
     return;
   }
   if (!config) return;
+  if (cloudDocument) {
+    if (target.id === "my-characters") {
+      try {
+        if (cloudDocument.state !== "conflict") await cloudDocument.flush();
+        await showLibrary(openCloudDocument, async (id) => {
+          if (cloudDocument?.document?.id === id) await newCloudCharacter();
+        });
+      } catch (error) {
+        notify(error instanceof Error ? error.message : String(error), true);
+      }
+      return;
+    }
+    if (target.id === "save-copy" || target.id === "save-shared-copy") {
+      try {
+        if (cloudDocument.state !== "conflict") await cloudDocument.flush();
+        const copy = structuredClone(config);
+        copy.name = `${(copy.name || "Adventurer").slice(0, 73)} (copy)`;
+        const record = await cloudRepository.save(
+          null,
+          null,
+          copy,
+          data.snapshot,
+        );
+        await openCloudDocument(record);
+        notify("Copy saved to your library");
+      } catch (error) {
+        notify(error instanceof Error ? error.message : String(error), true);
+      }
+      return;
+    }
+    if (target.id === "share-character") {
+      try {
+        await cloudDocument.flush();
+        if (cloudDocument.document) await showSharing(cloudDocument.document);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : String(error), true);
+      }
+      return;
+    }
+    if (target.id === "sign-out") {
+      try {
+        await cloudDocument.flush();
+      } catch {
+        if (
+          !confirm(
+            "Your latest changes could not be saved. Sign out and discard them?",
+          )
+        )
+          return;
+      }
+      adapter?.dispose();
+      await supabase!.auth.signOut({ scope: "local" });
+      location.reload();
+      return;
+    }
+    if (
+      cloudDocument.readOnly &&
+      ![
+        "new-character",
+        "export-png",
+        "save-json",
+        "pause",
+        "restart-pose",
+        "zoom-in",
+        "zoom-out",
+        "reset-view",
+        "token-peek",
+      ].includes(target.id) &&
+      !target.dataset.view
+    )
+      return;
+  }
   if (target.dataset.section) {
     navigate(target.dataset.section as Section);
     return;
@@ -1480,7 +1660,14 @@ document.addEventListener("click", async (event) => {
     return;
   }
   if (target.id === "new-character") {
-    await changeCharacter(defaultConfig(data));
+    if (cloudDocument) {
+      try {
+        await cloudDocument.flush();
+        await newCloudCharacter();
+      } catch (error) {
+        notify(error instanceof Error ? error.message : String(error), true);
+      }
+    } else await changeCharacter(defaultConfig(data));
     return;
   }
   if (target.id === "save-json") {
@@ -1507,7 +1694,7 @@ document.addEventListener("click", async (event) => {
 });
 document.addEventListener("input", (event) => {
   const target = event.target as HTMLInputElement;
-  if (!config || busy) return;
+  if (!config || busy || cloudDocument?.readOnly) return;
   if (target.id === "character-name") {
     config.name = target.value;
     persist("name");
@@ -1562,7 +1749,7 @@ document.addEventListener("input", (event) => {
 });
 document.addEventListener("change", async (event) => {
   const target = event.target as HTMLInputElement;
-  if (!config || busy) return;
+  if (!config || busy || cloudDocument?.readOnly) return;
   if (target.id === "catalog-expansion") {
     expansion = target.value;
     catalogPage = 0;
@@ -1604,7 +1791,13 @@ document.addEventListener("change", async (event) => {
       if (file.size > 200000) throw new Error("Character file exceeds 200 KB.");
       const imported = JSON.parse(await file.text());
       await hydrateEquipment(imported);
-      await changeCharacter(validateConfig(imported, data, wardrobe));
+      const valid = validateConfig(imported, data, wardrobe);
+      if (cloudDocument) {
+        await cloudDocument.flush();
+        await openCloudDocument(
+          await cloudRepository.save(null, null, valid, data.snapshot),
+        );
+      } else await changeCharacter(valid);
       const gender = modelFor(config, data).body.gender;
       if (gender < 2) preferredGender = gender;
       renderCatalog();
@@ -1631,36 +1824,111 @@ $("#stage").addEventListener("wheel", saveView, {
   capture: true,
   passive: true,
 });
-window.addEventListener("beforeunload", () => adapter?.dispose());
-try {
-  if (isPages && !apiBase) {
-    console.info(
-      "Set VITE_API_BASE_URL to the HTTPS model API and rebuild the Pages site. See app/DEPLOYMENT.md.",
-    );
-    throw new Error(
-      "The online forge is not available yet. Please check back soon.",
-    );
+window.addEventListener("beforeunload", (event) => {
+  if (cloudDocument?.dirty || cloudDocument?.state === "saving") {
+    event.preventDefault();
+    event.returnValue = "";
   }
-  const response = await fetch(apiUrl("/api/bootstrap"));
+});
+window.addEventListener("pagehide", () => adapter?.dispose());
+
+async function openCloudDocument(record: CloudCharacter) {
+  if (cloudDocument?.state !== "conflict") await cloudDocument?.flush();
+  await hydrateEquipment(record.config);
+  const next = validateConfig(record.config, data, wardrobe);
+  await operation(async () => {
+    await replaceViewer(next);
+    config = next;
+    cloudDocument!.bind(record, record.owner_id !== currentUser()!.id);
+    history = [];
+    future = [];
+    lastRecorded = undefined;
+    variations = undefined;
+    variationRequest++;
+    section = next.npc ? "npc" : "race";
+    location.hash = "";
+  }, false);
+}
+async function newCloudCharacter() {
+  await operation(async () => {
+    const next = defaultConfig(data);
+    await replaceViewer(next);
+    config = next;
+    cloudDocument!.bind(null);
+    history = [];
+    future = [];
+    lastRecorded = undefined;
+    variations = undefined;
+    variationRequest++;
+    section = "race";
+    location.hash = "";
+  }, false);
+}
+try {
+  if (cloudEnabled) {
+    $("#app").inert = true;
+    await requireSignIn();
+    activeCloudUser = currentUser()!.id;
+  }
+  const response = await dataRequest("/api/bootstrap");
   if (!response.ok)
     throw new Error("The forge could not connect. Please try again later.");
   data = await response.json();
-  const infoResponse = await fetch(apiUrl("/api/catalog/info"));
+  const infoResponse = await dataRequest("/api/catalog/info");
   if (!infoResponse.ok)
     throw new Error("Local catalogue is missing. Relaunch Token Forge.");
   catalogInfo = await infoResponse.json();
   config = defaultConfig(data);
   let notice = "";
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      await hydrateEquipment(parsed);
-      config = validateConfig(parsed, data, wardrobe);
+  if (cloudEnabled) {
+    cloudDocument = new DocumentStore(
+      cloudRepository,
+      data.snapshot,
+      (state, message) => {
+        const label = {
+          saved: "Saved online",
+          unsaved: "Unsaved changes",
+          saving: "Saving…",
+          error: "Could not save · Ctrl+S to retry",
+          conflict: "Changed in another tab · Save as copy",
+          readonly: "Shared character · Read-only",
+        }[state];
+        $("#document-status").textContent = label;
+        $("#save-state").textContent = label;
+        $("#save-dot").title = label;
+        $("#save-dot").classList.toggle(
+          "disconnected",
+          state === "error" || state === "conflict",
+        );
+        if (message) notify(message, true);
+      },
+    );
+    let record: CloudCharacter | null = null;
+    const share = location.hash.match(/^#\/share\/([a-f0-9]{64})$/)?.[1];
+    if (share) {
+      record = await cloudRepository.shared(share);
+      if (!record) {
+        notice = "This share link is no longer available.";
+        location.hash = "";
+      }
     }
-  } catch (error) {
-    notice = `Saved character could not load: ${error instanceof Error ? error.message : String(error)}`;
-  }
+    if (!record) record = (await cloudRepository.list())[0] ?? null;
+    if (record) {
+      await hydrateEquipment(record.config);
+      config = validateConfig(record.config, data, wardrobe);
+      cloudDocument.bind(record, record.owner_id !== activeCloudUser);
+    } else cloudDocument.bind(null);
+  } else
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        await hydrateEquipment(parsed);
+        config = validateConfig(parsed, data, wardrobe);
+      }
+    } catch (error) {
+      notice = `Saved character could not load: ${error instanceof Error ? error.message : String(error)}`;
+    }
   const gender = modelFor(config, data).body.gender;
   if (gender < 2) preferredGender = gender;
   if (config.npc) section = "npc";
@@ -1673,6 +1941,22 @@ try {
   persist();
   setBusy(false);
   schedulePreview(0);
+  $("#app").inert = false;
+  if (cloudEnabled)
+    supabase!.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" && !session)
+        queueMicrotask(() => {
+          $("#app").inert = true;
+          void requireSignIn().then(() => {
+            if (currentUser()?.id !== activeCloudUser) {
+              location.reload();
+              return;
+            }
+            $("#app").inert = false;
+            void cloudDocument?.flush().catch(() => {});
+          });
+        });
+    });
   if (notice || data.warning) notify(notice || data.warning!, true);
   Object.defineProperty(window, "forge", {
     value: {

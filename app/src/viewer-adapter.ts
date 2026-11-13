@@ -4,7 +4,8 @@ import { modelFor } from "./customization";
 import { tokenPoses } from "./poses";
 import type { Point } from "./token-layout";
 import { slotByInventory } from "./equipment";
-import { apiUrl } from "./runtime";
+import { apiUrl, cloudEnabled } from "./runtime";
+import { modelHeaders } from "./cloud-client";
 
 declare global {
   interface Window {
@@ -92,7 +93,15 @@ export class ViewerAdapter {
       owner.pending++;
       owner.lastActivity = performance.now();
       try {
-        const response = await fetchAsset(input, init);
+        const response = cloudEnabled
+          ? await fetchAsset(ViewerAdapter.canonicalAsset(url), {
+              ...init,
+              headers: {
+                ...Object.fromEntries(new Headers(init?.headers)),
+                ...modelHeaders(),
+              },
+            })
+          : await fetchAsset(input, init);
         if (!response.ok)
           owner.errors.push(`${url.pathname}: HTTP ${response.status}`);
         return response;
@@ -119,12 +128,20 @@ export class ViewerAdapter {
       password?: string | null,
     ) {
       urls.set(this, new URL(String(url), location.href));
-      return open.call(this, method, url, async, user, password);
+      const actual =
+        cloudEnabled &&
+        ViewerAdapter.requestOwner(new URL(String(url), location.href))
+          ? ViewerAdapter.canonicalAsset(new URL(String(url), location.href))
+          : url;
+      return open.call(this, method, actual, async, user, password);
     };
     XMLHttpRequest.prototype.send = function (body) {
       const url = urls.get(this),
         owner = url && ViewerAdapter.requestOwner(url);
       if (!owner || owner.disposed || !url) return send.call(this, body);
+      if (cloudEnabled)
+        for (const [name, value] of Object.entries(modelHeaders()))
+          this.setRequestHeader(name, value);
       owner.pending++;
       owner.lastActivity = performance.now();
       let completed = false;
@@ -144,10 +161,24 @@ export class ViewerAdapter {
         throw error;
       }
     };
+    let scriptUrl = window.CONTENT_PATH + "viewer/viewer.min.js";
+    if (cloudEnabled) {
+      const response = await fetchAsset(scriptUrl, { headers: modelHeaders() });
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).error ?? "The game viewer could not load.",
+        );
+      scriptUrl = URL.createObjectURL(
+        new Blob([await response.text()], { type: "text/javascript" }),
+      );
+    }
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = window.CONTENT_PATH + "viewer/viewer.min.js";
-      script.onload = () => resolve();
+      script.src = scriptUrl;
+      script.onload = () => {
+        if (cloudEnabled) URL.revokeObjectURL(scriptUrl);
+        resolve();
+      };
       script.onerror = () =>
         reject(
           new Error(
@@ -158,6 +189,9 @@ export class ViewerAdapter {
     });
     await import("../../setup.js");
     window.WH.debug = () => {};
+  }
+  private static canonicalAsset(url: URL) {
+    return url.href.replace(/\/view-\d+\/q-(?:low|medium|high)\//, "/");
   }
 
   async load(config: CharacterConfig, wardrobe: WardrobeItem[]) {
