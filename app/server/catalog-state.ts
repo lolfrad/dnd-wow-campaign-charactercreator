@@ -5,8 +5,9 @@ const directory = resolve(import.meta.dirname, "../../.cache");
 mkdirSync(directory, { recursive: true });
 export const statePath = resolve(directory, "catalog-state.sqlite");
 const state = new DatabaseSync(statePath);
+// Parallel catalog readers can briefly hold the validation cache's file lock.
 state.exec(
-  "CREATE TABLE IF NOT EXISTS assets(snapshot TEXT,path TEXT,status INTEGER,checkedAt TEXT,PRIMARY KEY(snapshot,path));",
+  "PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS assets(snapshot TEXT,path TEXT,status INTEGER,checkedAt TEXT,PRIMARY KEY(snapshot,path));",
 );
 const update = state.prepare("INSERT OR REPLACE INTO assets VALUES(?,?,?,?)");
 const seen = new Map<string, number>();
@@ -21,6 +22,6 @@ export function recordAssetResult(
     seen.get(snapshot + path) === status
   )
     return;
-  seen.set(snapshot + path, status);
   update.run(snapshot, path, status, new Date().toISOString());
+  seen.set(snapshot + path, status);
 }

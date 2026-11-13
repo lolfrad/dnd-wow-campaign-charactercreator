@@ -12,6 +12,8 @@ No separate Node server, paid host, email provider or SMTP service is needed for
 2. Push to `master`/`main`, or run **Deploy Token Forge to GitHub Pages** manually.
 3. The workflow installs dependencies, runs app tests, generates static catalog data, builds the site and optimizes preview images, then publishes `app/dist`.
 
+Keep the source set to GitHub Actions. Publishing directly from a branch starts a separate Jekyll deployment that can replace the app with the repository README, even when this workflow succeeds.
+
 The base path comes from the repository's Pages configuration. This project's expected URL is [Token Forge](https://lolfrad.github.io/dnd-wow-campaign-charactercreator/). Bundles, catalog chunks, previews, the preview iframe and the animation worker all respect the project path. Share links use hash routes and can be opened directly.
 
 The existing public configuration works without Actions variables. To use another project, set both `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as repository Actions variables, deploy the database/functions to that project, then rebuild. Empty variables fall back to the checked-in project configuration.
