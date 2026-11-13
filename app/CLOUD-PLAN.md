@@ -7,7 +7,7 @@ The Supabase integration is implemented for the Pages build. The local Node work
 - Username/password signup and login, with no email collection or verification.
 - No password recovery, as requested. The signup form explains that a forgotten password means losing account access.
 - Sign-in before initializing the cloud editor or opening a shared character.
-- Online autosave, My characters, Save as copy, JSON backup/import, deletion and revocable share links.
+- My characters appears after every login and page load. Select a saved build or the New character tile; Duplicate beside Delete opens an independent copy. Online edits autosave, with no JSON or copy controls in the top bar.
 - Shared links load the latest saved version when opened. Recipients must sign in and may save an independent copy.
 - Supabase stores character JSON and small private thumbnails. Character builds are not saved in localStorage in cloud mode; only the login session and disposable preview caches are stored in the browser.
 
@@ -48,7 +48,7 @@ All application tables have Row Level Security. Character writes go through a na
 
 Share tokens contain 256 bits of randomness; only their hashes are stored. URLs use `#/share/<token>`, which works under a GitHub Pages project path. A link grants read access to the latest saved document, not update rights. Copying creates a new UUID under the recipient's ownership. There are at most 20 active links per character. Revoking a link or deleting the original removes future access; downloaded copies cannot be recalled.
 
-The private `character-thumbnails` bucket accepts WebP files up to 128 KiB. The app generates 192-pixel thumbnails, writes one file per saved character and uses short-lived signed URLs for the owner's library. Thumbnails are optional: a failed thumbnail upload does not invalidate a saved character.
+The private `character-thumbnails` bucket accepts WebP files up to 128 KiB. The app captures library previews separately at export resolution and generates 512-pixel WebP thumbnails, writes one file per saved character and uses short-lived signed URLs for the owner's library. Opening a character refreshes its older thumbnail. Thumbnails are optional: a failed thumbnail upload does not invalidate a saved character.
 
 ## Accounts without email
 

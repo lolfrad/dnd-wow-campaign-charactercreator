@@ -214,8 +214,6 @@ h2 {
   display: none;
 }
 @media (max-width: 600px) {
-  .cloud-workshop .document-actions > #new-character,
-  .cloud-workshop .document-actions > #save-copy,
   .cloud-workshop .document-actions > #share-character {
     display: none;
   }
@@ -303,12 +301,13 @@ dialog input {
 }
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   gap: 18px;
 }
 .library-grid article {
   display: grid;
   gap: 5px;
+  align-content: start;
 }
 .library-card {
   display: grid;
@@ -326,6 +325,22 @@ dialog input {
   object-fit: contain;
   background: #111d25;
   border-radius: 4px;
+}
+.library-new {
+  width: 100%;
+}
+.library-new .library-placeholder {
+  border: 1px dashed #657078;
+}
+.library-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.library-duplicate {
+  font-size: 11px;
+  padding: 5px;
 }
 .library-placeholder {
   display: grid;

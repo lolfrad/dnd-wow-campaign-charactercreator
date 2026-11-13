@@ -196,3 +196,12 @@ An arbitrary held animation frame is preserved for immediate export, but only it
 - Cloud controls fit 390, 600, 820, 1100 and 1440 pixel viewports. The login session is the only persistent account state in localStorage; cloud builds do not write the local character-draft key.
 - The Pages build contains 1,158 optimized preview images: 46,943,226 source PNG bytes become 6,988,064 WebP bytes. Its complete static output is about 89 MiB. Shared previews stay on Pages; the Supabase thumbnail bucket is private and capped at 128 KiB per file.
 - Supabase advisor notices for authenticated SECURITY DEFINER RPCs and a default-deny private table are intentional and documented in CLOUD-PLAN.md. Ownership/token checks and locked search paths are exercised by live checks. Free-tier leaked-password protection is unavailable.
+
+## 13 November 2026: library-first character workflow
+
+- Login and restored sessions open My characters without loading or saving a default build. A matching New character tile creates a build; Duplicate beside Delete copies the selected card and opens it. Deleting the active character leaves the library open instead of silently creating a replacement.
+- The cloud top bar no longer contains New, Save as copy, Load JSON or Save JSON. Incoming shared builds appear alongside owned cards and can be opened read-only or duplicated.
+- Paused player and NPC poses load at the selected animation's first frame without needing Play. The adapter bypasses the upstream crossfade and refreshes held bone transforms after assets finish loading.
+- Private library previews are separate export-resolution captures saved as 512-pixel WebP, within the existing 128 KiB limit. Existing thumbnails refresh on opening the character. Shared catalog images remain on Pages.
+- All 31 application tests passed. The existing real-renderer drag/scroll/held-frame/export regression passed against an isolated local dev server.
+- Two isolated-account Edge browser workflows passed against both the development frontend and the production Pages build under `/dnd-wow-campaign-charactercreator/`. They cover library startup/reload, New, duplicating a different card, preserving the original, player/NPC held poses, sharp private thumbnails, deleting the active build, shared copies, the mobile library and recovery from an optional thumbnail upload failure. Account/database requests are fixtures; the viewer and game assets are real. No hosted test accounts or characters are created by these checks.

@@ -13,7 +13,7 @@ You can:
 - Export transparent PNG tokens at 512 or 1024 pixels.
 - Add a crisp outline, a soft colored glow or a cast shadow with adjustable opacity.
 - Export transparent animated WebM and WebP tokens, including poses and equipment effects.
-- Undo changes and move character builds between computers using JSON files.
+- Undo changes, save characters online and duplicate builds from your library.
 
 ## Try it locally
 
@@ -32,7 +32,7 @@ Open [localhost:5173](http://127.0.0.1:5173). Internet access is needed to downl
 
 The online version runs on GitHub Pages with Supabase accounts and online character storage. See the [deployment guide](app/DEPLOYMENT.md).
 
-Sign in with a username and password to autosave builds online, open **My characters**, and use **Save as copy**. Share links require sign-in and open the latest saved build; recipients can save an independent copy. There is no email verification or password recovery, so keep your password safe. JSON import/download remains available as a backup. The separate local Node version still supports browser drafts. See the [cloud guide](app/CLOUD-PLAN.md) for details.
+Sign in with a username and password to open **My characters**. Select an existing build or the **New character** tile; use **Duplicate** beside a character to open an independent copy. Changes save online automatically. Share links require sign-in and show the latest shared build alongside your characters, where recipients can open or duplicate it. There is no email verification or password recovery, so keep your password safe. The separate local Node version still supports browser drafts and JSON files. See the [cloud guide](app/CLOUD-PLAN.md) for details.
 
 More usage details are in the [application guide](app/README.md).
 

@@ -7,6 +7,7 @@ import {
 } from "./cloud-client";
 import { cloudRepository } from "./cloud-repository";
 import type { CloudCharacter } from "./document-store";
+import { icon } from "./icons";
 const esc = (value: unknown) =>
   String(value).replace(
     /[&<>"']/g,
@@ -66,20 +67,47 @@ export async function requireSignIn() {
   return authentication;
 }
 
-export async function showLibrary(
-  open: (document: CloudCharacter) => Promise<void>,
-  deleted: (id: string) => Promise<void>,
-) {
+export async function showLibrary(actions: {
+  open: (character: CloudCharacter) => Promise<void>;
+  create: () => Promise<void>;
+  duplicate: (character: CloudCharacter) => Promise<void>;
+  deleted: (id: string) => Promise<void>;
+  canClose: () => boolean;
+  shared?: CloudCharacter | null;
+}) {
+  if (document.querySelector(".library-dialog")) return;
   const dialog = document.createElement("dialog");
   dialog.className = "library-dialog";
   dialog.setAttribute("aria-label", "My characters");
   document.body.append(dialog);
   dialog.showModal();
   let page = 0;
+  let working = false;
+  const run = async (action: () => Promise<void>) => {
+    if (working) return;
+    working = true;
+    dialog
+      .querySelectorAll("button")
+      .forEach((button) => (button.disabled = true));
+    try {
+      await action();
+      dialog.close();
+    } catch (error) {
+      working = false;
+      await render();
+      dialog.querySelector("[role=alert]")!.textContent =
+        error instanceof Error ? error.message : String(error);
+    }
+  };
   const render = async () => {
     dialog.innerHTML = "<p>Loading characters…</p>";
     try {
       const rows = await cloudRepository.list(page);
+      const shared =
+        actions.shared && actions.shared.owner_id !== currentUser()!.id
+          ? actions.shared
+          : null;
+      const characters = shared && page === 0 ? [shared, ...rows] : rows;
       const paths = rows
         .map((row) => row.thumbnail_path)
         .filter((path): path is string => !!path);
@@ -91,10 +119,13 @@ export async function showLibrary(
       const urls = new Map(
         (signed.data ?? []).map((item) => [item.path, item.signedUrl]),
       );
-      dialog.innerHTML = `<div class="dialog-heading"><h1>My characters</h1><button data-close aria-label="Close library">✕</button></div><div class="library-grid">${rows.map((row) => `<article><button class="library-card" data-open="${row.id}">${urls.get(row.thumbnail_path ?? "") ? `<img src="${esc(urls.get(row.thumbnail_path!))}" alt="">` : '<span class="library-placeholder">✦</span>'}<strong>${esc(row.name)}</strong><small>${esc(new Date(row.updated_at).toLocaleDateString())}</small></button><button class="library-delete" data-delete="${row.id}">Delete</button></article>`).join("") || "<p>Your library is empty. Start a new character to save your first build.</p>"}</div><div class="dialog-pagination"><button id="library-previous" class="secondary" ${page === 0 ? "disabled" : ""}>Previous</button><span>Page ${page + 1}</span><button id="library-next" class="secondary" ${rows.length < 24 ? "disabled" : ""}>Next</button></div><p class="account-error" role="alert"></p>`;
+      dialog.innerHTML = `<div class="dialog-heading"><h1>My characters</h1>${actions.canClose() ? '<button data-close aria-label="Close library">✕</button>' : ""}</div><div class="library-grid"><article><button class="library-card library-new" data-create><span class="library-placeholder">${icon("plus", 52)}</span><strong>New character</strong><small>Create a character</small></button></article>${characters.map((row) => `<article><button class="library-card" data-open="${row.id}">${urls.get(row.thumbnail_path ?? "") ? `<img src="${esc(urls.get(row.thumbnail_path!))}&v=${row.revision}" alt="" decoding="async">` : '<span class="library-placeholder">✦</span>'}<strong>${esc(row.name)}</strong><small>${row.id === shared?.id ? "Shared with you" : esc(new Date(row.updated_at).toLocaleDateString())}</small></button><div class="library-card-actions"><button class="library-duplicate" data-duplicate="${row.id}">Duplicate</button>${row.id === shared?.id ? "" : `<button class="library-delete" data-delete="${row.id}">Delete</button>`}</div></article>`).join("")}</div><div class="dialog-pagination"><button id="library-previous" class="secondary" ${page === 0 ? "disabled" : ""}>Previous</button><span>Page ${page + 1}</span><button id="library-next" class="secondary" ${rows.length < 24 ? "disabled" : ""}>Next</button></div><p class="account-error" role="alert"></p>`;
       dialog
-        .querySelector("[data-close]")!
-        .addEventListener("click", () => dialog.close());
+        .querySelector("[data-close]")
+        ?.addEventListener("click", () => dialog.close());
+      dialog
+        .querySelector("[data-create]")!
+        .addEventListener("click", () => void run(actions.create));
       dialog.querySelector("#library-next")!.addEventListener("click", () => {
         page++;
         void render();
@@ -108,17 +139,30 @@ export async function showLibrary(
       dialog
         .querySelectorAll<HTMLButtonElement>("[data-open]")
         .forEach((button) =>
-          button.addEventListener("click", async () => {
-            button.disabled = true;
-            try {
-              await open(rows.find((row) => row.id === button.dataset.open)!);
-              dialog.close();
-            } catch (error) {
-              dialog.querySelector("[role=alert]")!.textContent =
-                error instanceof Error ? error.message : String(error);
-              button.disabled = false;
-            }
-          }),
+          button.addEventListener(
+            "click",
+            () =>
+              void run(() =>
+                actions.open(
+                  characters.find((row) => row.id === button.dataset.open)!,
+                ),
+              ),
+          ),
+        );
+      dialog
+        .querySelectorAll<HTMLButtonElement>("[data-duplicate]")
+        .forEach((button) =>
+          button.addEventListener(
+            "click",
+            () =>
+              void run(() =>
+                actions.duplicate(
+                  characters.find(
+                    (row) => row.id === button.dataset.duplicate,
+                  )!,
+                ),
+              ),
+          ),
         );
       dialog
         .querySelectorAll<HTMLButtonElement>("[data-delete]")
@@ -134,7 +178,8 @@ export async function showLibrary(
               await cloudRepository.remove(
                 rows.find((row) => row.id === button.dataset.delete)!,
               );
-              await deleted(button.dataset.delete!);
+              await actions.deleted(button.dataset.delete!);
+              if (page > 0 && rows.length === 1) page--;
               await render();
             } catch (error) {
               dialog.querySelector("[role=alert]")!.textContent =
@@ -144,12 +189,18 @@ export async function showLibrary(
           }),
         );
     } catch (error) {
-      dialog.innerHTML = `<p role="alert">${esc(error instanceof Error ? error.message : error)}</p><button data-close class="secondary">Close</button>`;
+      dialog.innerHTML = `<h1>My characters</h1><p role="alert">${esc(error instanceof Error ? error.message : error)}</p><button data-retry class="secondary">Try again</button>${actions.canClose() ? '<button data-close class="secondary">Close</button>' : ""}`;
       dialog
-        .querySelector("[data-close]")!
-        .addEventListener("click", () => dialog.close());
+        .querySelector("[data-retry]")!
+        .addEventListener("click", () => void render());
+      dialog
+        .querySelector("[data-close]")
+        ?.addEventListener("click", () => dialog.close());
     }
   };
+  dialog.addEventListener("cancel", (event) => {
+    if (working || !actions.canClose()) event.preventDefault();
+  });
   dialog.addEventListener("close", () => dialog.remove());
   await render();
 }

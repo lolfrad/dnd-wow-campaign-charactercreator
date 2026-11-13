@@ -72,7 +72,7 @@ export class DocumentStore {
     if (this.conflict)
       return Promise.reject(
         new Error(
-          "This character changed in another tab. Reload it or save a copy.",
+          "This character changed in another tab. Reopen it from My characters.",
         ),
       );
     if (this.writing) return this.writing;

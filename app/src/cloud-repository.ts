@@ -66,11 +66,17 @@ export async function uploadThumbnail(record: CloudCharacter, url: string) {
   image.src = url;
   await image.decode();
   const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 192;
-  canvas.getContext("2d")!.drawImage(image, 0, 0, 192, 192);
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", 0.75),
-  );
+  canvas.width = canvas.height = 512;
+  const context = canvas.getContext("2d")!;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(image, 0, 0, 512, 512);
+  let blob: Blob | null = null;
+  for (const quality of [0.94, 0.87, 0.8]) {
+    blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", quality),
+    );
+    if (blob && blob.size <= 131072) break;
+  }
   if (!blob || blob.size > 131072) return;
   const path = `${user.id}/${record.id}.webp`;
   const { error } = await supabase!.storage

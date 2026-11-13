@@ -453,7 +453,9 @@ export class ViewerAdapter {
       config.pose.animation = animations.includes("Stand")
         ? "Stand"
         : animations[0];
-    this.viewer.setAnimation(config.pose.animation);
+    // A paused animation never advances the upstream crossfade. Select the
+    // sequence directly so its first frame can replace the default pose.
+    this.viewer.method("setAnimation", [config.pose.animation, false]);
     this.viewer.setAnimPaused(config.pose.paused);
     this.lastValidated = -1;
   }
@@ -468,6 +470,8 @@ export class ViewerAdapter {
   private refreshPoseCache() {
     const model = this.viewer?.renderer?.actors[0]?.c;
     if (!model?.aa) return;
+    model.aa.d = 0;
+    model.aa.a = 1;
     for (const bone of model.W ?? []) {
       bone.C = bone.x(bone.t ?? model.aa);
       if (bone.a) bone.k = bone.x(bone.a);

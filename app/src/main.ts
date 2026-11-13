@@ -153,6 +153,9 @@ let recording: AbortController | undefined;
 let cloudDocument: DocumentStore | undefined,
   thumbnailTimer: ReturnType<typeof setTimeout>;
 let activeCloudUser = "";
+let sharedCloudCharacter: CloudCharacter | null = null;
+let savedThumbnailKey = "";
+let thumbnailSaving: Promise<void> | null = null;
 const openTokenSections = new Set(["zoom"]);
 function tokenSection(id: string, label: string, content: string) {
   return `<details class="token-section" data-token-section="${id}" ${openTokenSections.has(id) ? "open" : ""}><summary>${label}</summary><div class="token-section-content">${content}</div></details>`;
@@ -162,7 +165,7 @@ const verifiedModels = new Set([1, 2, 4, 11]);
 $("#app").innerHTML = `
 <header class="topbar"><a class="brand" href="${appUrl("")}" aria-label="Token Forge">${icon("shield", 26)}<span>Token Forge</span></a>
  <div class="document-name"><div class="document-title"><input id="character-name" aria-label="Character name" maxlength="80" value="New adventurer"><span id="save-dot" class="save-dot" title="Browser draft"></span></div><span class="document-status" id="document-status">Browser draft</span></div>
- <nav class="document-actions" aria-label="Character files"><button id="new-character" class="document-button" title="New character" aria-label="New character" disabled>${icon("plus", 17)}<span>New</span></button><button id="import-json" class="document-button" title="Load character JSON" aria-label="Import character" disabled>${icon("import", 17)}<span>Load JSON</span></button><button id="save-json" class="document-button" title="Save character JSON" aria-label="Save character JSON" disabled>${icon("save", 17)}<span>Save JSON</span></button></nav>
+ <nav class="document-actions" aria-label="Character files">${cloudEnabled ? "" : `<button id="new-character" class="document-button" title="New character" aria-label="New character" disabled>${icon("plus", 17)}<span>New</span></button><button id="import-json" class="document-button" title="Load character JSON" aria-label="Import character" disabled>${icon("import", 17)}<span>Load JSON</span></button><button id="save-json" class="document-button" title="Save character JSON" aria-label="Save character JSON" disabled>${icon("save", 17)}<span>Save JSON</span></button>`}</nav>
  <div class="header-actions"><button id="undo" class="icon-button" title="Undo" aria-label="Undo" disabled>${icon("undo", 19)}</button><button id="redo" class="icon-button" title="Redo" aria-label="Redo" disabled>${icon("redo", 19)}</button><span class="separator"></span><button id="export-png" class="primary compact" disabled>${icon("export", 18)}<span>Export</span></button></div>
 </header>
 <main class="app-shell">
@@ -199,12 +202,7 @@ if (cloudEnabled) {
   menu.className = "character-menu";
   menu.innerHTML =
     '<summary>More</summary><div class="character-menu-content"></div>';
-  menu.querySelector("div")!.append($("#import-json"), $("#save-json"));
-  for (const [id, label] of [
-    ["new-character", "New character"],
-    ["save-copy", "Save as copy"],
-    ["share-character", "Share"],
-  ]) {
+  for (const [id, label] of [["share-character", "Share"]]) {
     const item = document.createElement("button");
     item.className = "document-button mobile-character-action";
     item.dataset.cloudAction = id;
@@ -213,7 +211,6 @@ if (cloudEnabled) {
   }
   for (const [id, label, glyph] of [
     ["my-characters", "My characters", "import"],
-    ["save-copy", "Save as copy", "save"],
     ["share-character", "Share", "export"],
   ]) {
     const button = document.createElement("button");
@@ -277,7 +274,7 @@ function setBusy(value: boolean, label = "Loading…") {
   $("#loading-label").textContent = label;
   document
     .querySelectorAll<HTMLButtonElement>(
-      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation,#my-characters,#save-copy,#share-character,#sign-out,[data-cloud-action]",
+      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation,#my-characters,#share-character,#sign-out,[data-cloud-action]",
     )
     .forEach((node) => (node.disabled = value));
   if (!value && config) {
@@ -296,7 +293,6 @@ function setBusy(value: boolean, label = "Loading…") {
     $(".category-rail")
       .querySelectorAll<HTMLButtonElement>("button")
       .forEach((button) => (button.disabled = true));
-    $("#import-json").setAttribute("disabled", "");
     $("#undo").setAttribute("disabled", "");
     $("#redo").setAttribute("disabled", "");
     $("#share-character").setAttribute("disabled", "");
@@ -520,7 +516,7 @@ function renderCatalog(keepToolbar = false) {
     $("#item-variations").hidden = true;
     $(".app-shell").classList.remove("variations-open");
     $("#catalog-content").innerHTML =
-      `<div class="shared-character"><h2>${esc(config.name)}</h2><p>You are viewing a shared character. Save your own copy to customize it.</p><button id="save-shared-copy" class="primary wide">Save as copy</button><p>Shared links load the owner’s latest saved version.</p></div>`;
+      `<div class="shared-character"><h2>${esc(config.name)}</h2><p>You are viewing a shared character. Duplicate it in My characters to customize your own copy.</p><button id="open-shared-library" class="primary wide">My characters</button><p>Shared links load the owner’s latest saved version.</p></div>`;
     return;
   }
   $("#catalog-title").textContent = labels[section];
@@ -944,11 +940,13 @@ async function operation(action: () => Promise<void>, record = true) {
     renderCatalog();
     persist(record ? "" : false);
     schedulePreview();
+    return true;
   } catch (error) {
     config = before;
     notify(error instanceof Error ? error.message : String(error), true);
     header();
     renderCatalog();
+    return false;
   } finally {
     setBusy(false);
   }
@@ -1028,19 +1026,54 @@ function showToken(url: string) {
   }
   if (cloudDocument && !cloudDocument.readOnly) {
     clearTimeout(thumbnailTimer);
-    const captured = JSON.stringify(config);
     thumbnailTimer = setTimeout(() => {
-      const record = cloudDocument?.document;
-      if (
-        record &&
-        !cloudDocument?.dirty &&
-        tokenUrl === url &&
-        JSON.stringify(config) === captured
-      )
-        void uploadThumbnail(record, url).catch((error) =>
-          console.info("Optional thumbnail was not saved", error),
-        );
+      void saveLibraryThumbnail().catch((error) =>
+        console.info("Optional thumbnail was not saved", error),
+      );
     }, 5000);
+  }
+}
+function saveLibraryThumbnail() {
+  clearTimeout(thumbnailTimer);
+  if (thumbnailSaving) return thumbnailSaving;
+  thumbnailSaving = writeLibraryThumbnail().finally(() => {
+    thumbnailSaving = null;
+  });
+  return thumbnailSaving;
+}
+async function writeLibraryThumbnail() {
+  if (previewing) await previewing;
+  const record = cloudDocument?.document;
+  if (
+    !record ||
+    cloudDocument?.readOnly ||
+    cloudDocument?.dirty ||
+    busy ||
+    !adapter
+  )
+    return;
+  const captured = JSON.stringify(config);
+  const key = `${record.id}:${generation}:${captured}`;
+  if (savedThumbnailKey === key) return;
+  // The library needs its own full-resolution capture. Upscaling the small
+  // live token preview loses detail before the image even reaches storage.
+  const writing = (async () => {
+    const result = await renderToken(adapter, structuredClone(config), 512);
+    if (
+      cloudDocument?.document?.id !== record.id ||
+      JSON.stringify(config) !== captured
+    )
+      return;
+    await uploadThumbnail(record, result.url);
+    savedThumbnailKey = key;
+  })();
+  // A failed optional upload must not reject an editor operation waiting for
+  // the renderer to finish, or leave its loading controls disabled.
+  const rendering = (previewing = writing.catch(() => {}));
+  try {
+    await writing;
+  } finally {
+    if (previewing === rendering) previewing = null;
   }
 }
 function composePreview() {
@@ -1223,7 +1256,7 @@ document.addEventListener("keydown", (event) => {
       return;
     }
     if (key === "s") action = "save-json";
-    else if (key === "o") action = "import-json";
+    else if (key === "o" && !cloudEnabled) action = "import-json";
     else if (!editing && key === "z") action = event.shiftKey ? "redo" : "undo";
     else if (!editing && key === "y") action = "redo";
     else if (!editing && key === "e") action = "export-png";
@@ -1257,30 +1290,9 @@ document.addEventListener("click", async (event) => {
   }
   if (!config) return;
   if (cloudDocument) {
-    if (target.id === "my-characters") {
+    if (target.id === "my-characters" || target.id === "open-shared-library") {
       try {
-        if (cloudDocument.state !== "conflict") await cloudDocument.flush();
-        await showLibrary(openCloudDocument, async (id) => {
-          if (cloudDocument?.document?.id === id) await newCloudCharacter();
-        });
-      } catch (error) {
-        notify(error instanceof Error ? error.message : String(error), true);
-      }
-      return;
-    }
-    if (target.id === "save-copy" || target.id === "save-shared-copy") {
-      try {
-        if (cloudDocument.state !== "conflict") await cloudDocument.flush();
-        const copy = structuredClone(config);
-        copy.name = `${(copy.name || "Adventurer").slice(0, 73)} (copy)`;
-        const record = await cloudRepository.save(
-          null,
-          null,
-          copy,
-          data.snapshot,
-        );
-        await openCloudDocument(record);
-        notify("Copy saved to your library");
+        await openLibrary();
       } catch (error) {
         notify(error instanceof Error ? error.message : String(error), true);
       }
@@ -1836,7 +1848,7 @@ async function openCloudDocument(record: CloudCharacter) {
   if (cloudDocument?.state !== "conflict") await cloudDocument?.flush();
   await hydrateEquipment(record.config);
   const next = validateConfig(record.config, data, wardrobe);
-  await operation(async () => {
+  const opened = await operation(async () => {
     await replaceViewer(next);
     config = next;
     cloudDocument!.bind(record, record.owner_id !== currentUser()!.id);
@@ -1848,9 +1860,11 @@ async function openCloudDocument(record: CloudCharacter) {
     section = next.npc ? "npc" : "race";
     location.hash = "";
   }, false);
+  if (!opened)
+    throw new Error("The character could not load. Please try again.");
 }
 async function newCloudCharacter() {
-  await operation(async () => {
+  const opened = await operation(async () => {
     const next = defaultConfig(data);
     await replaceViewer(next);
     config = next;
@@ -1863,6 +1877,51 @@ async function newCloudCharacter() {
     section = "race";
     location.hash = "";
   }, false);
+  if (!opened)
+    throw new Error("The new character could not load. Please try again.");
+}
+async function openLibrary() {
+  if (cloudDocument!.state !== "conflict") await cloudDocument!.flush();
+  await saveLibraryThumbnail().catch((error) =>
+    console.info("Optional thumbnail was not saved", error),
+  );
+  await showLibrary({
+    open: async (record) =>
+      openCloudDocument(
+        record.owner_id === currentUser()!.id
+          ? await cloudRepository.get(record.id)
+          : record,
+      ),
+    create: newCloudCharacter,
+    duplicate: async (record) => {
+      if (record.owner_id === currentUser()!.id)
+        record = await cloudRepository.get(record.id);
+      const copy = structuredClone(record.config);
+      copy.name = `${(copy.name || "Adventurer").slice(0, 73)} (copy)`;
+      const duplicate = await cloudRepository.save(
+        null,
+        null,
+        copy,
+        data.snapshot,
+      );
+      await openCloudDocument(duplicate);
+      notify("Character duplicated");
+    },
+    deleted: async (id) => {
+      if (cloudDocument?.document?.id !== id) return;
+      clearTimeout(previewTimer);
+      clearTimeout(thumbnailTimer);
+      clearTimeout(dragTimer);
+      await previewing;
+      cloudDocument.bind(null);
+      adapter?.dispose();
+      adapter = undefined!;
+      tokenSource = undefined;
+      savedThumbnailKey = "";
+    },
+    canClose: () => !!adapter,
+    shared: sharedCloudCharacter,
+  });
 }
 try {
   if (cloudEnabled) {
@@ -1890,7 +1949,7 @@ try {
           unsaved: "Unsaved changes",
           saving: "Saving…",
           error: "Could not save · Ctrl+S to retry",
-          conflict: "Changed in another tab · Save as copy",
+          conflict: "Changed in another tab · Reopen from My characters",
           readonly: "Shared character · Read-only",
         }[state];
         $("#document-status").textContent = label;
@@ -1903,21 +1962,15 @@ try {
         if (message) notify(message, true);
       },
     );
-    let record: CloudCharacter | null = null;
     const share = location.hash.match(/^#\/share\/([a-f0-9]{64})$/)?.[1];
     if (share) {
-      record = await cloudRepository.shared(share);
-      if (!record) {
+      sharedCloudCharacter = await cloudRepository.shared(share);
+      if (!sharedCloudCharacter) {
         notice = "This share link is no longer available.";
         location.hash = "";
       }
     }
-    if (!record) record = (await cloudRepository.list())[0] ?? null;
-    if (record) {
-      await hydrateEquipment(record.config);
-      config = validateConfig(record.config, data, wardrobe);
-      cloudDocument.bind(record, record.owner_id !== activeCloudUser);
-    } else cloudDocument.bind(null);
+    cloudDocument.bind(null);
   } else
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -1933,27 +1986,32 @@ try {
   if (gender < 2) preferredGender = gender;
   if (config.npc) section = "npc";
   await ViewerAdapter.initialize(data);
-  setBusy(true);
-  await replaceViewer(config);
   previews = new PreviewGallery(data, $("#catalog-scroll"));
-  header();
-  renderCatalog();
-  persist();
-  setBusy(false);
-  schedulePreview(0);
   $("#app").inert = false;
+  if (cloudEnabled) {
+    $("#loading").hidden = true;
+    await openLibrary();
+  } else {
+    setBusy(true);
+    await replaceViewer(config);
+    header();
+    renderCatalog();
+    persist();
+    setBusy(false);
+    schedulePreview(0);
+  }
   if (cloudEnabled)
     supabase!.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" && !session)
         queueMicrotask(() => {
           $("#app").inert = true;
-          void requireSignIn().then(() => {
+          void requireSignIn().then(async () => {
             if (currentUser()?.id !== activeCloudUser) {
               location.reload();
               return;
             }
             $("#app").inert = false;
-            void cloudDocument?.flush().catch(() => {});
+            await openLibrary();
           });
         });
     });

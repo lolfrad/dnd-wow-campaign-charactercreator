@@ -18,6 +18,10 @@ async function signIn(
   await page.locator("[name=username]").fill(accounts[index].username);
   await page.locator("[name=password]").fill(accounts[index].password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.locator("[data-create]")).toBeVisible();
+  const existing = page.locator("[data-open]").first();
+  if (await existing.count()) await existing.click();
+  else await page.locator("[data-create]").click();
   await page.waitForFunction(() => (window as any).forge, null, {
     timeout: 120000,
   });
@@ -34,6 +38,9 @@ test("Pages cloud flow saves online, exports NPC effects in both animation forma
     timeout: 30000,
   });
   await page.reload();
+  await page
+    .getByRole("button", { name: "Cloud browser verification" })
+    .click();
   await page.waitForFunction(() => (window as any).forge, null, {
     timeout: 120000,
   });
@@ -95,7 +102,8 @@ test("Pages cloud flow saves online, exports NPC effects in both animation forma
     "readonly",
     "",
   );
-  await recipient.locator("#save-shared-copy").click();
+  await recipient.locator("#open-shared-library").click();
+  await recipient.locator("[data-duplicate]").first().click();
   await expect(recipient.locator("#document-status")).toHaveText(
     "Saved online",
     { timeout: 100000 },

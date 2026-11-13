@@ -14,7 +14,7 @@ The optimized average is approximately 6,035 bytes per image. The complete Pages
 
 - **Shared race/equipment/appearance/pose previews:** versioned static WebP files on GitHub Pages. Everyone reuses them, with no Supabase function or database query for each image. Normal browser HTTP caching also reduces repeated downloads.
 - **On-demand reference previews:** render missing scenes in the isolated browser viewer, then cache the result by scene and asset snapshot in IndexedDB. The underlying model files use stable cacheable URLs, so later poses can reuse downloaded assets.
-- **Saved-character library thumbnails:** one private 192-pixel WebP per character in Supabase Storage, updated after the preview settles. The library requests signed URLs in a batch. Each file is capped at 128 KiB and replaces its earlier version.
+- **Saved-character library thumbnails:** one private 512-pixel WebP per character in Supabase Storage, captured separately from the small live token preview and updated after it settles. The library requests signed URLs in a batch. Each file is capped at 128 KiB and replaces its earlier version.
 - **Exported tokens/animations:** download to the user; they are not uploaded into the character database or file bucket.
 
 Pre-rendering more commonly used NPCs would be useful. Bake them through a trusted maintenance script and publish another static pack on Pages. Avoid allowing arbitrary visitors to populate a shared public thumbnail bucket, which would introduce quota abuse and preview-poisoning problems.
