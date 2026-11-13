@@ -7,7 +7,8 @@ import {
   catalogueNpc,
   catalogueVariants,
 } from "../server/catalog";
-import { recordAssetResult } from "../server/catalog-state";
+import { recordAssetResult, statePath } from "../server/catalog-state";
+import { DatabaseSync } from "node:sqlite";
 const query = (
   kind: "items" | "npcs",
   q: string,
@@ -108,4 +109,21 @@ test("NPC categories identify encounter bosses and missing provider metadata is 
       (n) => n.displayId === 3167,
     ),
   );
+});
+test("asset validation can commit while another catalog connection holds a read transaction", () => {
+  const reader = new DatabaseSync(statePath, { readOnly: true });
+  const snapshot = "concurrent-validation-" + crypto.randomUUID();
+  try {
+    reader.exec("BEGIN");
+    reader.prepare("SELECT COUNT(*) FROM assets").get();
+    recordAssetResult(snapshot, "meta/npc/3167.json", 404);
+    assert.ok(
+      query("npcs", "q=City+Guard", snapshot).items.every(
+        (npc) => npc.displayId !== 3167,
+      ),
+    );
+  } finally {
+    reader.exec("ROLLBACK");
+    reader.close();
+  }
 });

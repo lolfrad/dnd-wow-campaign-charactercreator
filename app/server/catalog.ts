@@ -15,6 +15,7 @@ function db() {
         "Local catalogue is missing. Run npm run import:catalog.",
       );
     database = new DatabaseSync(path, { readOnly: true });
+    database.exec("PRAGMA busy_timeout=5000");
     database.prepare("ATTACH DATABASE ? AS validation").run(statePath);
   }
   return database;

@@ -5,9 +5,9 @@ const directory = resolve(import.meta.dirname, "../../.cache");
 mkdirSync(directory, { recursive: true });
 export const statePath = resolve(directory, "catalog-state.sqlite");
 const state = new DatabaseSync(statePath);
-// Parallel catalog readers can briefly hold the validation cache's file lock.
+// Let asset validation write while catalogs are being read in other processes.
 state.exec(
-  "PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS assets(snapshot TEXT,path TEXT,status INTEGER,checkedAt TEXT,PRIMARY KEY(snapshot,path));",
+  "PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS assets(snapshot TEXT,path TEXT,status INTEGER,checkedAt TEXT,PRIMARY KEY(snapshot,path));",
 );
 const update = state.prepare("INSERT OR REPLACE INTO assets VALUES(?,?,?,?)");
 const seen = new Map<string, number>();
