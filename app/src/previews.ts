@@ -1,6 +1,7 @@
 import type { PreviewScene } from "./catalog";
 import { previewKey, staticPreview, referenceScene } from "./catalog";
 import type { Bootstrap } from "./types";
+import { appUrl } from "./runtime";
 
 export class PreviewGallery {
   readonly stats = {
@@ -38,7 +39,9 @@ export class PreviewGallery {
     private data: Bootstrap,
     private scrollRoot: HTMLElement,
   ) {
-    this.catalog = fetch(`/previews/${data.snapshot}/catalog/manifest.json`)
+    this.catalog = fetch(
+      appUrl(`previews/${data.snapshot}/catalog/manifest.json`),
+    )
       .then(async (response) => {
         if (!response.ok) return new Set<string>();
         const manifest = await response.json();
@@ -47,7 +50,7 @@ export class PreviewGallery {
       .catch(() => new Set<string>());
     this.ready = new Promise((resolve) => (this.resolveReady = resolve));
     this.frame = document.createElement("iframe");
-    this.frame.src = "/previews.html";
+    this.frame.src = appUrl("previews.html");
     this.frame.className = "preview-renderer";
     this.frame.title = "Catalog preview renderer";
     this.frame.setAttribute("aria-hidden", "true");
@@ -157,7 +160,12 @@ export class PreviewGallery {
       this.show(image, key, cached);
       return;
     }
-    const url = staticPreview(scene, this.data.snapshot, await this.catalog);
+    const preview = staticPreview(
+      scene,
+      this.data.snapshot,
+      await this.catalog,
+    );
+    const url = preview ? appUrl(preview) : null;
     if (url) {
       const exists = await new Promise<boolean>((resolve) => {
         const test = new Image();

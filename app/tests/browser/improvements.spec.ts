@@ -145,7 +145,7 @@ for (const failedAsset of ["m2/148234.m2", "textures/148236.webp"]) {
   });
 }
 
-test("recolors open beside the left panel, filters adapt and token sections stay collapsible", async ({
+test("recolors open to the left of the right catalog, filters adapt and token sections stay collapsible", async ({
   page,
 }) => {
   await mkdir(output, { recursive: true });
@@ -162,6 +162,11 @@ test("recolors open beside the left panel, filters adapt and token sections stay
   await family.click();
   await ready(page);
   await expect(page.locator("#item-variations")).toBeVisible();
+  const drawer = await page.locator("#item-variations").boundingBox();
+  const catalog = await page.locator(".catalog-panel").boundingBox();
+  const workspace = await page.locator(".workspace").boundingBox();
+  expect(drawer!.x).toBeGreaterThan(workspace!.x);
+  expect(drawer!.x + drawer!.width).toBeCloseTo(catalog!.x, 0);
   const variations = page.locator("[data-variant]");
   await expect(variations.nth(1)).toBeVisible();
   const id = await variations.nth(1).getAttribute("data-variant");
@@ -177,7 +182,7 @@ test("recolors open beside the left panel, filters adapt and token sections stay
   await expect(page.locator('[aria-label="Armor materials"]')).toHaveCount(0);
   await expect(page.locator("#catalog-expansion")).toBeVisible();
   await page.locator('[data-section="token"]').first().click();
-  await expect(page.locator("[data-token-section]")).toHaveCount(3);
+  await expect(page.locator("[data-token-section]")).toHaveCount(4);
   await page.locator("#token-zoom").fill("220");
   expect(
     await page.evaluate(() => (window as any).forge.config.token.zoom),

@@ -8,3 +8,6 @@ app/test-results/
 app/test-results-interaction/
 app/test-results-*/
 app/playwright-report/
+.env
+.env.*
+!.env.example

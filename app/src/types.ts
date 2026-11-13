@@ -119,7 +119,13 @@ export interface CharacterConfig {
     padding: number;
     anchor: "head" | "figure";
     offset: { x: number; y: number };
-    outline: { enabled: boolean; color: string; width: number };
+    outline: {
+      enabled: boolean;
+      color: string;
+      width: number;
+      style: "crisp" | "soft";
+    };
+    shadow: { enabled: boolean; opacity: number };
     animation: {
       format: "webm" | "webp";
       duration: "pose" | 2 | 4;

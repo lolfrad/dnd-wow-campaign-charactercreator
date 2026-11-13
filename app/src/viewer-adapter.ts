@@ -4,6 +4,7 @@ import { modelFor } from "./customization";
 import { tokenPoses } from "./poses";
 import type { Point } from "./token-layout";
 import { slotByInventory } from "./equipment";
+import { apiUrl } from "./runtime";
 
 declare global {
   interface Window {
@@ -58,13 +59,14 @@ export class ViewerAdapter {
   }
 
   private static requestOwner(url: URL) {
+    const content = new URL(window.CONTENT_PATH, location.href);
     if (
-      url.origin !== location.origin ||
-      !url.pathname.startsWith(window.CONTENT_PATH)
+      url.origin !== content.origin ||
+      !url.pathname.startsWith(content.pathname)
     )
       return;
     const scope = url.pathname
-      .slice(window.CONTENT_PATH.length)
+      .slice(content.pathname.length)
       .match(/^view-(\d+)\//)?.[1];
     return scope ? this.assetScopes.get(Number(scope)) : undefined;
   }
@@ -74,7 +76,7 @@ export class ViewerAdapter {
 
   static async initialize(data: Bootstrap) {
     window.$ = window.jQuery = $;
-    window.CONTENT_PATH = `/wow-assets/${data.snapshot}/`;
+    window.CONTENT_PATH = apiUrl(`/wow-assets/${data.snapshot}/`);
     window.WOTLK_TO_RETAIL_DISPLAY_ID_API = undefined;
     // Modern binary assets use fetch; metadata still uses jQuery AJAX. Track
     // both, and attribute failures to the loading candidate, never its usable

@@ -92,9 +92,39 @@ export function composeToken(
         size,
         (config.token.outline.width * size) / 512,
         config.token.outline.color,
+        config.token.outline.style,
       ),
     );
     context.putImageData(image, 0, 0);
+  }
+  if (config.token.shadow.enabled && config.token.shadow.opacity > 0) {
+    // Project a black copy of the original subject below it. The outline is
+    // deliberately excluded from the shadow mask, including for soft glows.
+    const shadow = document.createElement("canvas");
+    shadow.width = shadow.height = size;
+    const mask = shadow.getContext("2d")!;
+    mask.drawImage(
+      canvas,
+      layout.x,
+      layout.y,
+      canvas.width * layout.scale,
+      canvas.height * layout.scale,
+    );
+    mask.globalCompositeOperation = "source-in";
+    mask.fillStyle = "#000000";
+    mask.fillRect(0, 0, size, size);
+    context.save();
+    context.globalCompositeOperation = "destination-over";
+    context.globalAlpha = config.token.shadow.opacity / 100;
+    context.filter = `blur(${(2 * size) / 512}px)`;
+    context.drawImage(
+      shadow,
+      size * 0.015,
+      size * 0.12,
+      size * 1.02,
+      size * 0.9,
+    );
+    context.restore();
   }
   const pixels = pixelBounds(
     context.getImageData(0, 0, size, size).data,

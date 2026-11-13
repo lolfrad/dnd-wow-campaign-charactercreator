@@ -5,9 +5,10 @@ import type { Bootstrap, CharacterConfig, WardrobeItem } from "./types";
 import { modelFor } from "./customization";
 import { renderToken, renderThumbnail } from "./token";
 import wardrobeData from "./data/wardrobe.json";
+import { apiUrl } from "./runtime";
 
 const wardrobe: WardrobeItem[] = wardrobeData;
-const data: Bootstrap = await (await fetch("/api/bootstrap")).json();
+const data: Bootstrap = await (await fetch(apiUrl("/api/bootstrap"))).json();
 await ViewerAdapter.initialize(data);
 let adapter: ViewerAdapter | undefined,
   current: CharacterConfig | undefined,
@@ -27,7 +28,7 @@ async function render(scene: PreviewScene) {
     let item = wardrobe.find((i) => i.id === scene.itemId);
     if (!item) {
       const response = await fetch(
-        `/api/catalog/item/${encodeURIComponent(scene.itemId)}`,
+        apiUrl(`/api/catalog/item/${encodeURIComponent(scene.itemId)}`),
       );
       if (response.ok) {
         item = await response.json();

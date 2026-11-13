@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && vite build --mode pages",
+    "preview": "vite preview --host 127.0.0.1",
     "start": "tsx server/index.ts --production",
     "test": "tsx --test tests/*.test.ts",
     "test:browser": "playwright test",

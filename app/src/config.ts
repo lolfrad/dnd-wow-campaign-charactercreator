@@ -47,7 +47,8 @@ export function defaultConfig(data: Bootstrap): CharacterConfig {
         padding: 10,
         anchor: "head",
         offset: { x: 0, y: 0 },
-        outline: { enabled: false, color: "#171b21", width: 3 },
+        outline: { enabled: false, color: "#171b21", width: 3, style: "crisp" },
+        shadow: { enabled: false, opacity: 35 },
         animation: {
           format: "webm",
           duration: "pose",
@@ -177,6 +178,12 @@ export function validateConfig(
     !/^#[a-f0-9]{6}$/i.test(outline.color)
   )
     throw new Error("Outline color must be a six-digit hex color.");
+  if (outline.style !== undefined && !["crisp", "soft"].includes(outline.style))
+    throw new Error("Unknown outline style.");
+  const shadow =
+    token.shadow === undefined
+      ? { enabled: false, opacity: 35 }
+      : object(token.shadow, "Shadow");
   const settings =
     value.settings === undefined
       ? { textureQuality: "high", exportScale: 2 }
@@ -209,6 +216,11 @@ export function validateConfig(
         enabled: boolean(outline.enabled, "Outline enabled"),
         color: outline.color,
         width: number(outline.width, 1, 12, "Outline width"),
+        style: outline.style ?? "crisp",
+      },
+      shadow: {
+        enabled: boolean(shadow.enabled, "Shadow enabled"),
+        opacity: number(shadow.opacity, 0, 100, "Shadow opacity"),
       },
       animation: {
         format: animation.format,

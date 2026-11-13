@@ -18,6 +18,7 @@ import { PreviewGallery } from "./previews";
 import { icon } from "./icons";
 import { recordAnimatedToken } from "./animated-token";
 import { weaponTypes, expansionNames } from "./equipment";
+import { apiBase, apiUrl, appUrl, isPages } from "./runtime";
 import {
   armorSlots,
   bodyName,
@@ -151,13 +152,13 @@ function tokenSection(id: string, label: string, content: string) {
 const verifiedModels = new Set([1, 2, 4, 11]);
 
 $("#app").innerHTML = `
-<header class="topbar"><a class="brand" href="/" aria-label="Token Forge">${icon("shield", 26)}<span>Token Forge</span></a>
- <div class="document-name"><input id="character-name" aria-label="Character name" maxlength="80" value="New adventurer"><span id="save-dot" class="save-dot" title="Saved"></span></div>
- <div class="header-actions"><button id="undo" class="icon-button" title="Undo" aria-label="Undo" disabled>${icon("undo", 19)}</button><button id="redo" class="icon-button" title="Redo" aria-label="Redo" disabled>${icon("redo", 19)}</button><span class="separator"></span><button id="import-json" class="icon-button" title="Import character" aria-label="Import character">${icon("import", 20)}</button><button id="save-json" class="icon-button" title="Save character JSON" aria-label="Save character JSON" disabled>${icon("save", 20)}</button><button id="export-png" class="primary compact" disabled>${icon("export", 18)}<span>Export</span></button></div>
+<header class="topbar"><a class="brand" href="${appUrl("")}" aria-label="Token Forge">${icon("shield", 26)}<span>Token Forge</span></a>
+ <div class="document-name"><div class="document-title"><input id="character-name" aria-label="Character name" maxlength="80" value="New adventurer"><span id="save-dot" class="save-dot" title="Browser draft"></span></div><span class="document-status" id="document-status">Browser draft</span></div>
+ <nav class="document-actions" aria-label="Character files"><button id="new-character" class="document-button" title="New character" aria-label="New character" disabled>${icon("plus", 17)}<span>New</span></button><button id="import-json" class="document-button" title="Load character JSON" aria-label="Import character" disabled>${icon("import", 17)}<span>Load JSON</span></button><button id="save-json" class="document-button" title="Save character JSON" aria-label="Save character JSON" disabled>${icon("save", 17)}<span>Save JSON</span></button></nav>
+ <div class="header-actions"><button id="undo" class="icon-button" title="Undo" aria-label="Undo" disabled>${icon("undo", 19)}</button><button id="redo" class="icon-button" title="Redo" aria-label="Redo" disabled>${icon("redo", 19)}</button><span class="separator"></span><button id="export-png" class="primary compact" disabled>${icon("export", 18)}<span>Export</span></button></div>
 </header>
 <main class="app-shell">
  <nav class="category-rail" aria-label="Creator categories">${sections.map((id) => `<button data-section="${id}" class="category-button ${id === "race" ? "selected" : ""}" aria-label="${labels[id]}" title="${labels[id]}" aria-pressed="${id === "race"}">${icon(id, 27)}<span>${labels[id]}</span></button>`).join("")}</nav>
- <aside id="item-variations" class="variations-panel" aria-label="Item variations" hidden></aside>
  <section class="workspace" aria-label="Character viewport"><div class="viewport-heading"><span id="character-subtitle">Loading…</span><button id="current-pose" data-section="poses" title="Choose pose">Stand</button></div>
   <div id="stage" class="stage"><div id="viewer-mount"></div><div id="loading" class="loading-overlay"><span class="spinner"></span><strong id="loading-label">Loading…</strong><button id="cancel-recording" class="secondary" hidden>Cancel</button></div></div>
   <div class="viewport-tools"><div class="tool-group">${[
@@ -179,6 +180,7 @@ $("#app").innerHTML = `
   <button class="token-peek checker" data-section="token" title="Token preview" aria-label="Open token controls"><img id="token-peek" alt="Token preview" hidden><span>${icon("token", 15)}</span></button>
   <div class="viewport-hint">Drag to rotate · Scroll to zoom</div><span id="pose-status" class="sr-only" aria-live="polite"></span>
  </section>
+ <aside id="item-variations" class="variations-panel" aria-label="Item variations" hidden></aside>
  <aside class="catalog-panel"><div class="catalog-heading"><span id="catalog-icon">${icon("race", 22)}</span><h1 id="catalog-title">Race</h1><button id="randomize" class="icon-button" title="Randomize appearance" aria-label="Randomize appearance">${icon("random", 20)}</button></div><div id="catalog-toolbar"></div><div id="catalog-scroll" class="catalog-scroll"><div id="catalog-content"></div></div></aside>
 </main><div id="notification" class="notification" role="status" hidden><span></span><button id="dismiss-notification" class="icon-button" aria-label="Dismiss">${icon("clear", 17)}</button></div><input id="json-file" type="file" accept=".json,application/json" hidden><span id="save-state" class="sr-only" aria-live="polite"></span>`;
 
@@ -207,10 +209,12 @@ function persist(group: string | false = "") {
   $("#redo").toggleAttribute("disabled", busy || !future.length);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    $("#save-dot").title = "Saved";
-    $("#save-state").textContent = "Saved";
+    $("#save-dot").title = "Draft saved in this browser";
+    $("#document-status").textContent = "Browser draft";
+    $("#save-state").textContent = "Draft saved in this browser";
   } catch {
     $("#save-dot").title = "Use Save JSON";
+    $("#document-status").textContent = "Download to keep changes";
   }
 }
 function setBusy(value: boolean, label = "Loading…") {
@@ -219,7 +223,7 @@ function setBusy(value: boolean, label = "Loading…") {
   $("#loading-label").textContent = label;
   document
     .querySelectorAll<HTMLButtonElement>(
-      ".choice-card,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation",
+      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation",
     )
     .forEach((node) => (node.disabled = value));
   if (!value && config) {
@@ -337,7 +341,7 @@ async function hydrateEquipment(value: unknown) {
   const results = await Promise.all(
     ids.map(async (id) => {
       if (wardrobe.some((item) => item.id === id)) return;
-      const response = await fetch(`/api/catalog/item/${id}`);
+      const response = await fetch(apiUrl(`/api/catalog/item/${id}`));
       if (response.ok) rememberItems([await response.json()]);
     }),
   );
@@ -348,7 +352,7 @@ function requestCatalogue(key: string) {
   requestedCatalog = key;
   catalogError = "";
   const request = ++catalogRequest;
-  void fetch(key)
+  void fetch(apiUrl(key))
     .then(async (response) => {
       const result = await response.json();
       if (!response.ok)
@@ -386,7 +390,7 @@ async function showVariations(item: WardrobeItem, activeSlot: Category) {
   renderCatalog();
   try {
     const response = await fetch(
-      `/api/catalog/variants/${encodeURIComponent(item.id)}`,
+      apiUrl(`/api/catalog/variants/${encodeURIComponent(item.id)}`),
     );
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? "Variations unavailable");
@@ -702,7 +706,8 @@ function renderCatalog(keepToolbar = false) {
    <div class="segmented">${chip("data-token-view", "90", "Overhead", config.token.elevation === 90)}${chip("data-token-view", "75", "Tilted", config.token.elevation === 75)}</div>
    ${slider("token-elevation", "Elevation", 0, 90, config.token.elevation, "°")}${slider("token-facing", "Facing", 0, 360, config.token.facing, "°")}
    ${tokenSection("zoom", "Zoom & framing", `${slider("token-zoom", "Framing", 50, 400, config.token.zoom * 100, "%")}${slider("token-padding", "Padding", 0, 24, config.token.padding, "%")}<p class="settings-hint">Zoom above 100% to crop closer. Drag the token to position the part you want to keep.</p>`)}
-   ${tokenSection("outline", "Outline", `<div class="setting-row"><label for="outline-enabled">Enable outline</label><input id="outline-enabled" type="checkbox" role="switch" ${config.token.outline.enabled ? "checked" : ""}></div><div class="outline-controls"><input id="outline-color" type="color" aria-label="Outline color" value="${config.token.outline.color}">${slider("outline-width", "Width", 1, 12, config.token.outline.width, "px")}</div>`)}
+   ${tokenSection("outline", "Outline", `<div class="setting-row"><label for="outline-enabled">Enable outline</label><input id="outline-enabled" type="checkbox" role="switch" ${config.token.outline.enabled ? "checked" : ""}></div><div class="segmented" aria-label="Outline style">${chip("data-outline-style", "crisp", "Crisp", config.token.outline.style === "crisp")}${chip("data-outline-style", "soft", "Soft glow", config.token.outline.style === "soft")}</div><div class="outline-controls"><input id="outline-color" type="color" aria-label="Outline color" value="${config.token.outline.color}">${slider("outline-width", "Width", 1, 12, config.token.outline.width, "px")}</div>`)}
+   ${tokenSection("shadow", "Shadow", `<div class="setting-row"><label for="shadow-enabled">Cast shadow</label><input id="shadow-enabled" type="checkbox" role="switch" ${config.token.shadow.enabled ? "checked" : ""}></div>${slider("shadow-opacity", "Shadow opacity", 0, 100, config.token.shadow.opacity, "%")}<p class="settings-hint">A soft silhouette cast below the character, as if lit from above.</p>`)}
    <div class="segmented">${chip("data-size", "512", "512 × 512", config.token.size === 512)}${chip("data-size", "1024", "1024 × 1024", config.token.size === 1024)}</div><button class="primary wide" id="token-download">${icon("export", 18)} Export PNG</button>
    ${tokenSection("animation", `${icon("film", 17)} Animated token`, `<div class="segmented">${chip("data-animation-format", "webm", "WebM", config.token.animation.format === "webm", "Transparent video")}${chip("data-animation-format", "webp", "WebP", config.token.animation.format === "webp", "Animated image")}</div><div class="animation-options"><div class="segmented" aria-label="Animation length">${chip("data-duration", "pose", "Full pose", config.token.animation.duration === "pose")}${chip("data-duration", "2", "2 s", config.token.animation.duration === 2)}${chip("data-duration", "4", "4 s", config.token.animation.duration === 4)}</div><div class="segmented" aria-label="Animation frame rate">${chip("data-fps", "12", "12 fps", config.token.animation.fps === 12)}${chip("data-fps", "20", "20 fps", config.token.animation.fps === 20)}</div></div><p class="settings-hint" id="pose-duration">${poseDurationLabel()}</p><div class="setting-row"><label for="animate-pose">Animate pose</label><input id="animate-pose" type="checkbox" role="switch" ${config.token.animation.includePose ? "checked" : ""}></div><fieldset class="pose-speed" ${config.token.animation.includePose ? "" : "disabled"}>${slider("animation-speed", "Pose speed", 25, 200, config.token.animation.speed * 100, "%")}</fieldset><p class="settings-hint">100% is normal speed. Lower values slow the pose. Equipment effects keep their own speed.</p><button class="secondary wide" id="record-animation">${icon("record", 17)} Export animation</button>`)}<div id="export-status" class="small-status" aria-live="polite"></div></div>`;
   } else if (section === "settings") {
@@ -1406,6 +1411,14 @@ document.addEventListener("click", async (event) => {
     renderCatalog();
     return;
   }
+  if (target.dataset.outlineStyle) {
+    config.token.outline.style = target.dataset.outlineStyle as
+      "crisp" | "soft";
+    persist();
+    renderCatalog();
+    schedulePreview();
+    return;
+  }
   if (target.dataset.textureQuality) {
     const next = structuredClone(config);
     next.settings.textureQuality = target.dataset
@@ -1466,6 +1479,10 @@ document.addEventListener("click", async (event) => {
     }, false);
     return;
   }
+  if (target.id === "new-character") {
+    await changeCharacter(defaultConfig(data));
+    return;
+  }
   if (target.id === "save-json") {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(config, null, 2)], { type: "application/json" }),
@@ -1520,6 +1537,11 @@ document.addEventListener("input", (event) => {
       persist(target.id);
       schedulePreview(220);
     }
+    if (target.id === "shadow-opacity") {
+      config.token.shadow.opacity = value;
+      persist(target.id);
+      schedulePreview(180);
+    }
     if (target.id === "animation-speed") {
       config.token.animation.speed = value / 100;
       adapter.animationSpeed(config.token.animation.speed);
@@ -1561,6 +1583,11 @@ document.addEventListener("change", async (event) => {
   }
   if (target.id === "outline-enabled") {
     config.token.outline.enabled = target.checked;
+    persist();
+    schedulePreview();
+  }
+  if (target.id === "shadow-enabled") {
+    config.token.shadow.enabled = target.checked;
     persist();
     schedulePreview();
   }
@@ -1606,10 +1633,19 @@ $("#stage").addEventListener("wheel", saveView, {
 });
 window.addEventListener("beforeunload", () => adapter?.dispose());
 try {
-  const response = await fetch("/api/bootstrap");
-  if (!response.ok) throw new Error("Restart the local server.");
+  if (isPages && !apiBase) {
+    console.info(
+      "Set VITE_API_BASE_URL to the HTTPS model API and rebuild the Pages site. See app/DEPLOYMENT.md.",
+    );
+    throw new Error(
+      "The online forge is not available yet. Please check back soon.",
+    );
+  }
+  const response = await fetch(apiUrl("/api/bootstrap"));
+  if (!response.ok)
+    throw new Error("The forge could not connect. Please try again later.");
   data = await response.json();
-  const infoResponse = await fetch("/api/catalog/info");
+  const infoResponse = await fetch(apiUrl("/api/catalog/info"));
   if (!infoResponse.ok)
     throw new Error("Local catalogue is missing. Relaunch Token Forge.");
   catalogInfo = await infoResponse.json();
@@ -1660,9 +1696,18 @@ try {
     configurable: true,
   });
 } catch (error) {
-  setBusy(false);
+  console.error("Token Forge could not start", error);
+  setBusy(true);
   $("#loading").hidden = false;
+  $("#loading .spinner").hidden = true;
   $("#loading-label").textContent =
     error instanceof Error ? error.message : String(error);
-  notify("Check the server log, then reload.", true);
+  $("#document-status").textContent = "Not connected";
+  $("#character-subtitle").textContent = "Character workshop";
+  $("#save-dot").title = "Not connected";
+  $("#save-dot").classList.add("disconnected");
+  $<HTMLInputElement>("#character-name").disabled = true;
+  document
+    .querySelectorAll<HTMLButtonElement>("button")
+    .forEach((button) => (button.disabled = true));
 }

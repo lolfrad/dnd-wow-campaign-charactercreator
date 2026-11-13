@@ -1,15 +1,16 @@
-/** An antialiased silhouette stroke. RGB/alpha of the original image stays intact. */
+/** Stroke the alpha silhouette, including translucent creature materials. */
 export function outlinePixels(
   source: Uint8ClampedArray,
   width: number,
   height: number,
   radius: number,
   color: string,
+  style: "crisp" | "soft" = "crisp",
 ): Uint8ClampedArray {
   const distance = new Float32Array(width * height),
     diagonal = Math.SQRT2;
   for (let i = 0; i < distance.length; i++)
-    distance[i] = source[i * 4 + 3] >= 32 ? 0 : 1e6;
+    distance[i] = source[i * 4 + 3] > 2 ? 0 : 1e6;
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
       const i = y * width + x;
@@ -38,10 +39,13 @@ export function outlinePixels(
     parseInt(color.slice(offset, offset + 2), 16),
   );
   const output = new Uint8ClampedArray(source);
+  const reach = style === "soft" ? radius * 3 : radius;
   for (let i = 0; i < distance.length; i++) {
-    if (distance[i] === 0 || distance[i] > radius + 0.5) continue;
+    if (distance[i] === 0 || distance[i] > reach) continue;
     const foreground = source[i * 4 + 3] / 255,
-      stroke = Math.min(1, Math.max(0, radius + 0.5 - distance[i]));
+      // Crisp edges have no fractional coverage. Soft uses a broad falloff
+      // which reaches zero at its edge, like a glow rather than a blurred line.
+      stroke = style === "soft" ? 0.8 * (1 - distance[i] / reach) ** 2 : 1;
     const alpha = foreground + stroke * (1 - foreground);
     if (!alpha) continue;
     for (let c = 0; c < 3; c++)

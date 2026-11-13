@@ -176,3 +176,12 @@ These generated files are local verification output, ignored by Git. The browser
 The integration run writes actual PNG/JSON downloads, viewport screenshots, per-item renders and machine-readable results to `app/test-results/evidence/`. Run `node app/scripts/inspect-exports.mjs` after the browser suite to create the wardrobe contact sheet and light/dark alpha inspection sheet. `node app/scripts/inspect-gallery.mjs` captures the UI galleries and bundled-thumbnail contact sheets against port 5175 (or `FORGE_PREVIEW_URL`). Playwright replaces its test output directory on a new run.
 
 An arbitrary held animation frame is preserved for immediate export, but only its animation name and paused state can be saved through stable upstream methods. Reloading or changing the race/body restarts the pose. Particle animation may remain independent. Other races, all possible poses/customizations and every cross-race item combination remain unverified. The live upstream hosts and mutable asset format are external dependencies; the cache detects published revision changes rather than promising historical asset availability.
+
+## 13 November 2026: token effects and Pages preparation
+
+- All 36 library tests and 24 application tests passed.
+- Focused Edge browser checks passed for the variations drawer beside the right-hand catalog, projected shadow opacity/foreground preservation, and actual crisp/glow PNG downloads from both Stormwind City Guard (3167) and Ragnaros (11121).
+- Shadow and glow settings survived reload; an animated NPC WebP retained transparency, multiple frames and the selected glow. The existing WebM/WebP export regression also passed.
+- Normal and Pages production builds passed TypeScript checking. A local Pages-subpath smoke check loaded the real model API, static thumbnails and preview iframe, then downloaded a PNG. CORS for this smoke check was simulated in the browser test; the current local server was not changed to support public hosting.
+- The Pages build without an API displayed its unavailable state and disabled editing. The top bar stayed within the viewport at 390, 600, 820, 1100 and 1920 pixels.
+- No live GitHub Pages deployment, hosted server, Supabase schema, login gate or cloud saving was created or verified. Direct upstream requests with a website Origin header returned HTTP 403; an asset API remains necessary. The cloud plan proposes validating Supabase Edge Functions and browser-side encoding to avoid a separate paid server.

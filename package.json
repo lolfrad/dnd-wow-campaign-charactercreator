@@ -12,6 +12,8 @@
     "test:debug": "node --inspect-brk ./node_modules/.bin/jest --runInBand",
     "dev": "npm run dev --workspace app",
     "build": "npm run build --workspace app",
+    "build:pages": "npm run build:pages --workspace app",
+    "preview": "npm run preview --workspace app",
     "start": "npm run start --workspace app",
     "test:app": "npm run test --workspace app",
     "test:browser": "npm run test:browser --workspace app",

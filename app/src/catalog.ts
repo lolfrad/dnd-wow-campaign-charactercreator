@@ -160,7 +160,8 @@ export function sceneConfig(
     padding: 8,
     anchor: "figure",
     offset: { x: 0, y: 0 },
-    outline: { enabled: false, color: "#000000", width: 1 },
+    outline: { enabled: false, color: "#000000", width: 1, style: "crisp" },
+    shadow: { enabled: false, opacity: 35 },
   };
   config.view = { elevation: 0, facing: 0, zoom: 1 };
   config.pose = { animation: "Stand", paused: true };

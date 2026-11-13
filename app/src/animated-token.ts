@@ -1,5 +1,6 @@
 import type { CharacterConfig, Camera } from "./types";
 import type { ViewerAdapter } from "./viewer-adapter";
+import { apiUrl } from "./runtime";
 import {
   renderToken,
   composeToken,
@@ -149,7 +150,7 @@ export async function recordAnimatedToken(
     });
     check();
     onProgress(0.9, `Encoding ${settings.format.toUpperCase()}…`);
-    const response = await fetch("/api/export/animation", {
+    const response = await fetch(apiUrl("/api/export/animation"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ format: settings.format, size, frames: output }),
