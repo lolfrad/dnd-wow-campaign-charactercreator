@@ -11,6 +11,7 @@ The Supabase integration is implemented for the Pages build. The local Node work
 - Shared links load the latest saved version when opened. Recipients must sign in and may save an independent copy.
 - Library cards can be renamed without opening the renderer. The existing save RPC preserves ownership and revision checks; no schema change is needed. An active document accepts a rename only if no unrelated remote edits are being hidden.
 - Supabase stores character JSON and small private thumbnails. Character builds are not saved in localStorage in cloud mode; only the login session and disposable preview caches are stored in the browser.
+- Each character's JSON includes head/body presets keyed by race and body. They autosave with the character, survive reopening and travel with duplicates/shared builds. Older documents acquire an empty preset map when loaded; no database migration is required.
 
 ## Architecture
 

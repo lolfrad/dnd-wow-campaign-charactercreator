@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { statePath } from "./catalog-state";
 import { expansionNames } from "../src/equipment";
+import { sampleEquipment, type EquipmentScope } from "../src/randomization";
+import type { WardrobeItem } from "../src/types";
 const path = resolve(
   process.env.FORGE_CATALOG_PATH ??
     resolve(import.meta.dirname, "../data/catalog.sqlite"),
@@ -62,6 +64,19 @@ export function catalogueItem(id: string) {
 }
 const availableItem =
   "NOT EXISTS(SELECT 1 FROM validation.assets v WHERE v.snapshot=? AND v.path=json_extract(items.data,'$.metadataPath') AND v.status=404)";
+export function randomCatalogue(scope: EquipmentScope, snapshot: string) {
+  const rows = db()
+    .prepare(
+      `SELECT data FROM items WHERE ${scope === "weapons" ? "category IN ('mainHand','offHand')" : "category NOT IN ('mainHand','offHand')"} AND ${availableItem}`,
+    )
+    .all(snapshot);
+  return {
+    items: sampleEquipment(
+      scope,
+      rows.map((row) => JSON.parse(String(row.data)) as WardrobeItem),
+    ),
+  };
+}
 export function catalogueVariants(id: string, snapshot: string) {
   const item = catalogueItem(id);
   if (!item) return null;

@@ -256,6 +256,7 @@ export class ViewerAdapter {
         `${npc.name}: NPC assets unavailable (HTTP ${response.status}).`,
       );
     const metadata = await response.json();
+    if (this.disposed) throw new Error("Viewer was disposed");
     this.editableNpc = !!metadata.Character;
     this.npcBaseItems = Object.entries(metadata.Equipment ?? {}).map(
       ([slot, id]) => [Number(slot), Number(id)],
@@ -848,12 +849,14 @@ export class ViewerAdapter {
   }
   async poseFrame(animation: string, ms = 280) {
     this.pause(true);
-    this.viewer.method("setAnimation", [animation, true]);
+    this.viewer.method("setAnimation", [animation, false]);
     this.lastValidated = -1;
     await this.waitReady();
-    this.pause(false);
-    await delay(ms);
-    this.pause(true);
+    const state = this.viewer?.renderer?.actors[0]?.c?.aa?.e;
+    if (state?.a) {
+      state.b = Math.min(ms * this.poseSpeed, state.a.g - 1);
+      this.refreshPoseCache();
+    }
   }
   async loadItem(item: WardrobeItem) {
     this.character = false;

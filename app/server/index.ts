@@ -16,6 +16,7 @@ import {
   catalogueNpc,
   queryCatalogue,
   catalogueVariants,
+  randomCatalogue,
 } from "./catalog";
 import { encodeAnimation } from "./animation";
 
@@ -106,6 +107,12 @@ const server = createServer(async (req, res) => {
     try {
       if (url.pathname === "/api/catalog/info")
         return json(200, catalogueInfo());
+      if (url.pathname === "/api/catalog/random") {
+        const kind = url.searchParams.get("kind");
+        if (kind !== "armor" && kind !== "weapons")
+          return json(400, { error: "Unknown randomization scope" });
+        return json(200, randomCatalogue(kind, bootstrap.snapshot));
+      }
       if (url.pathname === "/api/catalog/items")
         return json(200, queryCatalogue("items", url, bootstrap.snapshot));
       if (url.pathname === "/api/catalog/npcs")

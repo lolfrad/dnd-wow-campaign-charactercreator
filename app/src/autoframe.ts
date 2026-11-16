@@ -2,13 +2,22 @@ import type { ViewerAdapter } from "./viewer-adapter";
 import type { CharacterConfig, Camera } from "./types";
 import { pixelBounds, type PixelBounds } from "./token";
 
-type Envelope = {
+export type Envelope = {
   camera: Camera;
   bounds: PixelBounds;
   relative: PixelBounds;
   size: number;
 };
 const envelopes = new WeakMap<ViewerAdapter, Map<string, Envelope>>();
+type Sampler = (
+  config: CharacterConfig,
+  distance: number,
+  signal?: AbortSignal,
+) => Promise<Envelope>;
+let sampler: Sampler | undefined;
+export function setEnvelopeSampler(value: Sampler) {
+  sampler = value;
+}
 function check(signal?: AbortSignal) {
   signal?.throwIfAborted();
 }
@@ -46,6 +55,23 @@ export async function animationEnvelope(
   }
   const existing = cache.get(key);
   if (existing) return existing;
+  if (!sampler) throw new Error("The framing renderer is not ready.");
+  const measured = await sampler(
+    structuredClone(config),
+    adapter.viewer.renderer.distance,
+    signal,
+  );
+  check(signal);
+  cache.set(key, measured);
+  return measured;
+}
+
+/** Runs only in the isolated preview frame, never on the displayed character. */
+export async function measureEnvelope(
+  adapter: ViewerAdapter,
+  config: CharacterConfig,
+  signal?: AbortSignal,
+): Promise<Envelope> {
   const size = 160;
   const camera: Camera = {
     elevation: config.token.elevation,
@@ -151,7 +177,6 @@ export async function animationEnvelope(
         bottom: relative.bottom * scale,
       },
     };
-    cache.set(key, fitted);
     return fitted;
   }
   throw new Error(

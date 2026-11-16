@@ -113,6 +113,7 @@ export interface CharacterConfig {
   classId: number;
   npc?: NpcEntry;
   customizations: Record<string, number>;
+  raceCustomizations?: Record<string, Record<string, number>>;
   equipment: Partial<Record<Category, string>>;
   pose: { animation: string; paused: boolean };
   token: Camera & {

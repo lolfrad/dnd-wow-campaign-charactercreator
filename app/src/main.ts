@@ -1,7 +1,6 @@
 import "./style.css";
 import { ViewerAdapter } from "./viewer-adapter";
 import {
-  availableOptions,
   editableOptions,
   isDragonArmor,
   normalizeAppearance,
@@ -10,6 +9,7 @@ import {
 import {
   categories,
   defaultConfig,
+  resetExportSettings,
   equip,
   STORAGE_KEY,
   validateConfig,
@@ -17,6 +17,13 @@ import {
 import { download, renderToken, composeToken } from "./token";
 import type { TokenSource } from "./token";
 import { PreviewGallery } from "./previews";
+import { setEnvelopeSampler } from "./autoframe";
+import { rememberRace } from "./race-memory";
+import {
+  randomAppearance,
+  type EquipmentRoll,
+  type EquipmentScope,
+} from "./randomization";
 import { icon } from "./icons";
 import { recordAnimatedToken } from "./animated-token";
 import { weaponTypes, expansionNames } from "./equipment";
@@ -146,6 +153,7 @@ let variations:
     }
   | undefined;
 let variationRequest = 0;
+const variationCache = new Map<string, WardrobeItem[]>();
 const catalogCache = new Map<string, CatalogueResult>(),
   npcEntries = new Map<string, NpcEntry>();
 let catalogRequest = 0,
@@ -198,23 +206,12 @@ $("#app").innerHTML = `
   <div class="viewport-hint">Drag to rotate · Scroll to zoom</div><span id="pose-status" class="sr-only" aria-live="polite"></span>
  </section>
  <aside id="item-variations" class="variations-panel" aria-label="Item variations" hidden></aside>
- <aside class="catalog-panel"><div class="catalog-heading"><span id="catalog-icon">${icon("race", 22)}</span><h1 id="catalog-title">Race</h1><button id="randomize" class="icon-button" title="Randomize appearance" aria-label="Randomize appearance">${icon("random", 20)}</button></div><div id="catalog-toolbar"></div><div id="catalog-scroll" class="catalog-scroll"><div id="catalog-content"></div></div></aside>
+ <aside class="catalog-panel"><div class="catalog-heading"><span id="catalog-icon">${icon("race", 22)}</span><h1 id="catalog-title">Race</h1><button id="randomize" class="chip randomize-button" title="Randomize character" aria-label="Randomize character">${icon("random", 18)}<span>Randomize</span></button></div><div id="catalog-toolbar"></div><div id="catalog-scroll" class="catalog-scroll"><div id="catalog-content"></div></div></aside>
 </main><div id="notification" class="notification" role="status" hidden><span></span><button id="dismiss-notification" class="icon-button" aria-label="Dismiss">${icon("clear", 17)}</button></div><input id="json-file" type="file" accept=".json,application/json" hidden><span id="save-state" class="sr-only" aria-live="polite"></span>`;
 
 if (cloudEnabled) {
   $("#app").classList.add("cloud-workshop");
   const files = $(".document-actions");
-  const menu = document.createElement("details");
-  menu.className = "character-menu";
-  menu.innerHTML =
-    '<summary>More</summary><div class="character-menu-content"></div>';
-  for (const [id, label] of [["share-character", "Share"]]) {
-    const item = document.createElement("button");
-    item.className = "document-button mobile-character-action";
-    item.dataset.cloudAction = id;
-    item.textContent = label;
-    menu.querySelector("div")!.append(item);
-  }
   for (const [id, label, glyph] of [
     ["my-characters", "My characters", "import"],
     ["share-character", "Share", "export"],
@@ -232,8 +229,7 @@ if (cloudEnabled) {
   signout.id = "sign-out";
   signout.className = "document-button";
   signout.textContent = "Sign out";
-  menu.querySelector("div")!.append(signout);
-  files.append(menu);
+  files.append(signout);
   $("#document-status").textContent = "Sign in to save characters";
 }
 
@@ -280,7 +276,7 @@ function setBusy(value: boolean, label = "Loading…") {
   $("#loading-label").textContent = label;
   document
     .querySelectorAll<HTMLButtonElement>(
-      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation,#my-characters,#share-character,#sign-out,[data-cloud-action]",
+      ".choice-card,#new-character,#save-json,#import-json,#export-png,#pause,#restart-pose,#randomize,#undo,#redo,#record-animation,#my-characters,#share-character,#sign-out",
     )
     .forEach((node) => (node.disabled = value));
   if (!value && config) {
@@ -368,6 +364,7 @@ function navigate(next: Section) {
   header();
   renderCatalog();
   $("#catalog-scroll").scrollTop = 0;
+  restoreEquippedVariations();
 }
 function chip(
   attribute: string,
@@ -456,42 +453,69 @@ function requestCatalogue(key: string) {
     });
 }
 async function showVariations(item: WardrobeItem, activeSlot: Category) {
-  if ((item.variantCount ?? 1) < 2) {
+  const cached = variationCache.get(item.id);
+  const request = ++variationRequest;
+  if ((cached && cached.length < 2) || item.variantCount === 1) {
     variations = undefined;
     renderCatalog();
     return;
   }
-  const request = ++variationRequest;
   variations = {
     id: item.id,
     slot: activeSlot,
-    items: [],
-    loading: true,
+    items: cached ?? [],
+    loading: !cached,
     error: "",
   };
   renderCatalog();
+  if (cached) return;
   try {
     const response = await dataRequest(
       `/api/catalog/variants/${encodeURIComponent(item.id)}`,
     );
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? "Variations unavailable");
+    rememberItems(result.items);
+    for (const variant of [item, ...result.items])
+      variationCache.set(variant.id, result.items);
     if (
       request !== variationRequest ||
       !variations ||
       variations.id !== item.id
     )
       return;
-    rememberItems(result.items);
-    variations.items = result.items;
+    if (result.items.length < 2) variations = undefined;
+    else variations.items = result.items;
   } catch (error) {
     if (request !== variationRequest || !variations) return;
     variations.error = error instanceof Error ? error.message : String(error);
   }
-  if (request === variationRequest && variations) {
-    variations.loading = false;
+  if (request === variationRequest) {
+    if (variations) variations.loading = false;
     renderCatalog();
   }
+}
+function restoreEquippedVariations() {
+  if (
+    !["armor", "weapons"].includes(section) ||
+    cloudDocument?.readOnly ||
+    (section === "armor" && dragonArmor && !config.npc && config.raceId === 52)
+  )
+    return;
+  const activeSlot = section === "weapons" ? weaponSlot : slot;
+  const item = wardrobe.find(
+    (entry) => entry.id === config.equipment[activeSlot],
+  );
+  if (!item) {
+    variations = undefined;
+    variationRequest++;
+    renderCatalog();
+  } else if (
+    variations?.slot !== activeSlot ||
+    (variations.id !== item.id &&
+      !variations.items.some((variant) => variant.id === item.id))
+  )
+    void showVariations(item, activeSlot);
 }
 function cataloguePage(result?: CatalogueResult) {
   if (!result)
@@ -536,8 +560,17 @@ function renderCatalog(keepToolbar = false) {
   }
   $("#catalog-title").textContent = labels[section];
   $("#catalog-icon").innerHTML = icon(section, 22);
+  const randomLabel =
+    section === "armor"
+      ? "Randomize armor"
+      : section === "weapons"
+        ? "Randomize weapons"
+        : "Randomize character";
   $("#randomize").hidden =
-    !!config.npc || !["head", "body", "race"].includes(section);
+    !["armor", "weapons"].includes(section) &&
+    (!!config.npc || !["head", "body", "race"].includes(section));
+  $("#randomize").title = randomLabel;
+  $("#randomize").setAttribute("aria-label", randomLabel);
   const content = $("#catalog-content"),
     toolbar = $("#catalog-toolbar");
   const cards: { scene: PreviewScene; index: number }[] = [];
@@ -823,7 +856,8 @@ function renderCatalog(keepToolbar = false) {
       "</div>";
     if (!poses.length) html = '<div class="empty-state">No matches</div>';
   } else if (section === "token") {
-    tools = "";
+    tools =
+      '<button id="token-defaults" class="secondary token-defaults">Defaults</button>';
     html = `<div class="token-editor"><div class="token-preview ${background}" id="token-background" tabindex="0" role="group" aria-label="Token position. Drag or use arrow keys. Home centers the head." title="Drag to position · Arrow keys to nudge"><img id="token-preview" alt="Live transparent token preview" draggable="false" ${tokenUrl ? `src="${tokenUrl}"` : "hidden"}><span class="token-pivot" aria-hidden="true"></span></div><div class="token-position-tools"><button id="center-head" class="chip ${config.token.anchor === "head" ? "selected" : ""}" title="Center head">${icon("head", 16)} Center head</button><button id="center-figure" class="chip ${config.token.anchor === "figure" ? "selected" : ""}" title="Fit figure">${icon("front", 16)} Fit figure</button><span>Drag to position</span></div><div class="background-options"><button data-background="checker" class="swatch checker ${background === "checker" ? "selected" : ""}" title="Checkerboard" aria-label="Checkerboard background"></button><button data-background="light" class="swatch light ${background === "light" ? "selected" : ""}" title="Light" aria-label="Light background"></button><button data-background="dark" class="swatch dark ${background === "dark" ? "selected" : ""}" title="Dark" aria-label="Dark background"></button></div>
    <div class="segmented">${chip("data-token-view", "90", "Overhead", config.token.elevation === 90)}${chip("data-token-view", "75", "Tilted", config.token.elevation === 75)}</div>
    ${slider("token-elevation", "Elevation", 0, 90, config.token.elevation, "°")}${slider("token-facing", "Facing", 0, 360, config.token.facing, "°")}
@@ -881,6 +915,12 @@ function renderCatalog(keepToolbar = false) {
   const show =
     !!variations &&
     ["armor", "weapons"].includes(section) &&
+    !(
+      section === "armor" &&
+      dragonArmor &&
+      !config.npc &&
+      config.raceId === 52
+    ) &&
     variations.slot === (section === "weapons" ? weaponSlot : slot);
   variationPanel.hidden = !show;
   $(".app-shell").classList.toggle("variations-open", show);
@@ -1000,10 +1040,12 @@ async function operation(action: () => Promise<void>, record = true) {
     setBusy(false);
   }
 }
-async function changeCharacter(next: CharacterConfig) {
+async function changeCharacter(next: CharacterConfig, remember = true) {
   await operation(async () => {
     const previousMode = !!config.npc;
-    next = normalizeAppearance(next, data);
+    next = remember
+      ? rememberRace(config, next, data)
+      : normalizeAppearance(next, data);
     await replaceViewer(next);
     config = next;
     if (previousMode !== !!next.npc) section = next.npc ? "npc" : "race";
@@ -1023,6 +1065,38 @@ async function changeEquipment(next: CharacterConfig) {
     await replaceViewer(next, true);
     config = next;
   });
+}
+async function randomEquipment(scope: EquipmentScope) {
+  const changed = await operation(async () => {
+    const response = await dataRequest(`/api/catalog/random?kind=${scope}`);
+    const result = await response.json();
+    if (!response.ok)
+      throw new Error(result.error ?? "Random equipment is unavailable.");
+    const rolls: EquipmentRoll[] = result.items;
+    rememberItems(rolls.map((roll) => roll.item));
+    const dragon = !config.npc && config.raceId === 52;
+    let next =
+      dragon && scope === "armor"
+        ? randomAppearance(config, data, "dragon-armor")
+        : structuredClone(config);
+    for (const { id } of categories)
+      if ((scope === "weapons") === ["mainHand", "offHand"].includes(id)) {
+        if (next.npc) next.equipment[id] = "";
+        else delete next.equipment[id];
+      }
+    for (const { slot: activeSlot, item } of rolls) {
+      if (
+        dragon &&
+        scope === "armor" &&
+        !["shoulders", "waist", "tabard"].includes(activeSlot)
+      )
+        continue;
+      next = equip(next, activeSlot, item.id, wardrobe);
+    }
+    await replaceViewer(next, true);
+    config = next;
+  });
+  if (changed) restoreEquippedVariations();
 }
 function schedulePreview(delay = 180) {
   clearTimeout(previewTimer);
@@ -1338,10 +1412,6 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("click", async (event) => {
   const target = (event.target as HTMLElement).closest<HTMLElement>("button");
   if (!target || target.hasAttribute("disabled")) return;
-  if (target.dataset.cloudAction) {
-    $<HTMLButtonElement>(`#${target.dataset.cloudAction}`).click();
-    return;
-  }
   if (target.id === "dismiss-notification") {
     $("#notification").hidden = true;
     return;
@@ -1410,6 +1480,7 @@ document.addEventListener("click", async (event) => {
     dragonArmor = target.dataset.dragonArmor === "custom";
     optionId = 0;
     renderCatalog();
+    restoreEquippedVariations();
     return;
   }
   if (target.id === "show-visage") {
@@ -1462,6 +1533,7 @@ document.addEventListener("click", async (event) => {
     quality = "all";
     catalogPage = 0;
     renderCatalog();
+    restoreEquippedVariations();
     return;
   }
   if (target.dataset.armorType) {
@@ -1489,6 +1561,7 @@ document.addEventListener("click", async (event) => {
     }
     catalogPage = 0;
     renderCatalog();
+    restoreEquippedVariations();
     return;
   }
   if (target.dataset.hands) {
@@ -1499,6 +1572,7 @@ document.addEventListener("click", async (event) => {
     }
     catalogPage = 0;
     renderCatalog();
+    restoreEquippedVariations();
     return;
   }
   if (target.dataset.poseFilter) {
@@ -1670,6 +1744,13 @@ document.addEventListener("click", async (event) => {
     schedulePreview();
     return;
   }
+  if (target.id === "token-defaults") {
+    await operation(async () => {
+      config = resetExportSettings(config, data);
+      adapter.animationSpeed(config.token.animation.speed);
+    });
+    return;
+  }
   if (target.id === "center-head" || target.id === "center-figure") {
     const before = structuredClone(config);
     config.token.anchor = target.id === "center-head" ? "head" : "figure";
@@ -1731,12 +1812,9 @@ document.addEventListener("click", async (event) => {
     return;
   }
   if (target.id === "randomize") {
-    const next = structuredClone(config);
-    for (let pass = 0; pass < 2; pass++)
-      for (const option of availableOptions(next, data))
-        next.customizations[option.id] =
-          option.choices[Math.floor(Math.random() * option.choices.length)].id;
-    await changeAppearance(next);
+    if (section === "armor" || section === "weapons")
+      await randomEquipment(section);
+    else await changeAppearance(randomAppearance(config, data));
     return;
   }
   if (target.id === "undo" || target.id === "redo") {
@@ -1761,7 +1839,7 @@ document.addEventListener("click", async (event) => {
       } catch (error) {
         notify(error instanceof Error ? error.message : String(error), true);
       }
-    } else await changeCharacter(defaultConfig(data));
+    } else await changeCharacter(defaultConfig(data), false);
     return;
   }
   if (target.id === "save-json") {
@@ -1917,7 +1995,7 @@ document.addEventListener("change", async (event) => {
         await openCloudDocument(
           await cloudRepository.save(null, null, valid, data.snapshot),
         );
-      } else await changeCharacter(valid);
+      } else await changeCharacter(valid, false);
       const gender = modelFor(config, data).body.gender;
       if (gender < 2) preferredGender = gender;
       renderCatalog();
@@ -2103,6 +2181,9 @@ try {
   await initializeModelCache();
   await ViewerAdapter.initialize(data);
   previews = new PreviewGallery(data, $("#catalog-scroll"));
+  setEnvelopeSampler((value, distance, signal) =>
+    previews.measure(value, distance, signal),
+  );
   $("#app").inert = false;
   if (cloudEnabled) {
     $("#loading").hidden = true;
@@ -2149,7 +2230,7 @@ try {
       async whenPreviewReady() {
         clearTimeout(previewTimer);
         await previewing;
-        if (!tokenSource) await updatePreview();
+        await updatePreview();
       },
       changeCharacter,
       changeEquipment,

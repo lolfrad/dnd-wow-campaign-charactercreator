@@ -5,10 +5,10 @@ import type { Bootstrap, CharacterConfig, WardrobeItem } from "./types";
 import { modelFor } from "./customization";
 import { renderToken, renderThumbnail } from "./token";
 import wardrobeData from "./data/wardrobe.json";
-import { apiUrl } from "./runtime";
 import { cloudEnabled } from "./runtime";
 import { restoreSession } from "./cloud-client";
 import { dataRequest } from "./data-client";
+import { measureEnvelope } from "./autoframe";
 
 const wardrobe: WardrobeItem[] = wardrobeData;
 if (cloudEnabled) await restoreSession();
@@ -113,13 +113,67 @@ async function render(scene: PreviewScene) {
   return (await renderThumbnail(adapter, config)).url;
 }
 let chain = Promise.resolve();
+const framingJobs = new Map<number, AbortController>();
 window.addEventListener("message", (event) => {
-  if (
-    event.source !== parent ||
-    event.origin !== location.origin ||
-    event.data?.type !== "forge-preview"
-  )
+  if (event.source !== parent || event.origin !== location.origin) return;
+  if (event.data?.type === "forge-framing-cancel") {
+    framingJobs.get(event.data.id)?.abort();
     return;
+  }
+  if (event.data?.type === "forge-framing") {
+    const { id, config, distance } = event.data;
+    const controller = new AbortController();
+    framingJobs.set(id, controller);
+    chain = chain.then(async () => {
+      let measurement: ViewerAdapter | undefined;
+      const stop = () => measurement?.dispose();
+      try {
+        controller.signal.throwIfAborted();
+        measurement = new ViewerAdapter(host(), data);
+        controller.signal.addEventListener("abort", stop, { once: true });
+        const still = structuredClone(config) as CharacterConfig;
+        still.pose.paused = true;
+        for (const itemId of Object.values(still.equipment)) {
+          if (!itemId || wardrobe.some((item) => item.id === itemId)) continue;
+          const response = await dataRequest(
+            `/api/catalog/item/${encodeURIComponent(itemId)}`,
+          );
+          if (!response.ok)
+            throw new Error("Framing equipment is unavailable.");
+          wardrobe.push(await response.json());
+        }
+        controller.signal.throwIfAborted();
+        await measurement.load(still, wardrobe);
+        controller.signal.throwIfAborted();
+        measurement.viewer.renderer.distance = distance;
+        const envelope = await measureEnvelope(
+          measurement,
+          still,
+          controller.signal,
+        );
+        parent.postMessage(
+          { type: "forge-framing-result", id, envelope },
+          location.origin,
+        );
+      } catch (error) {
+        parent.postMessage(
+          {
+            type: "forge-framing-result",
+            id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          location.origin,
+        );
+      } finally {
+        controller.signal.removeEventListener("abort", stop);
+        measurement?.dispose();
+        framingJobs.delete(id);
+        adapter?.activate();
+      }
+    });
+    return;
+  }
+  if (event.data?.type !== "forge-preview") return;
   const { id, scene } = event.data;
   chain = chain.then(async () => {
     try {

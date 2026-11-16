@@ -18,3 +18,5 @@ A real browser test fetched an asset, fetched it again, loaded it through XHR, a
 Shipping every model/texture would be a much larger download. This working copy already had 6,581 cached files totaling 1,778 MiB, including local derived texture variants. It covers only assets used while developing/testing, rather than the entire equipment/NPC catalog. Keeping a bounded cache of what each person actually uses avoids a large initial download and uses no Supabase Storage quota.
 
 Autoframe measures low-resolution frames once per model/pose/angle, then captures the final image at export resolution. Its result is reused when positioning the token. Selecting another edit cancels an unfinished analysis, and animated exports fit all actual recorded frames with one fixed layout.
+
+Framing analysis runs in the existing isolated preview iframe, with priority over queued catalog thumbnails. It loads a temporary renderer using cached assets and never seeks or accelerates the visible character. Cancellation disposes that renderer, and ordinary thumbnail work resumes after measurement. The displayed pose continues normally or stays on its paused frame.

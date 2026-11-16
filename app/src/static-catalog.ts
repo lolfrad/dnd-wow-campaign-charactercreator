@@ -1,4 +1,5 @@
 import type { WardrobeItem, NpcEntry } from "./types";
+import { sampleEquipment } from "./randomization";
 export interface CatalogRow<T = WardrobeItem> {
   priority: number;
   search: string;
@@ -145,6 +146,25 @@ export class StaticCatalog {
   async request(path: string) {
     const url = new URL(path, "https://forge.invalid");
     if (url.pathname === "/api/catalog/info") return this.index.info;
+    if (url.pathname === "/api/catalog/random") {
+      const kind = url.searchParams.get("kind");
+      if (kind !== "armor" && kind !== "weapons")
+        throw new Error("Unknown randomization scope.");
+      const slots = Object.keys(this.index.files).filter((slot) =>
+        kind === "weapons"
+          ? ["mainHand", "offHand"].includes(slot)
+          : !["mainHand", "offHand"].includes(slot),
+      );
+      const rows = (
+        await Promise.all(slots.map((slot) => this.items(slot)))
+      ).flat();
+      return {
+        items: sampleEquipment(
+          kind,
+          rows.map((row) => row.data),
+        ),
+      };
+    }
     if (url.pathname === "/api/catalog/items") {
       const slot = url.searchParams.get("slot") ?? "chest";
       if (!this.index.files[slot]) throw new Error("Unknown equipment slot.");

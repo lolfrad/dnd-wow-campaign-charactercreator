@@ -178,49 +178,6 @@ h2 {
 .save-dot.disconnected {
   background: #a37f61;
 }
-.character-menu {
-  position: relative;
-  align-self: center;
-}
-.character-menu summary {
-  cursor: pointer;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  white-space: nowrap;
-}
-.character-menu-content {
-  position: absolute;
-  right: 0;
-  top: 42px;
-  display: grid;
-  gap: 6px;
-  padding: 12px;
-  background: #1b272e;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  width: 180px;
-  box-shadow: 0 8px 30px #0008;
-  z-index: 12;
-}
-.character-menu-content .document-button {
-  width: 100%;
-  justify-content: flex-start;
-}
-.character-menu-content .document-button span {
-  display: inline;
-}
-.character-menu-content .mobile-character-action {
-  display: none;
-}
-@media (max-width: 600px) {
-  .cloud-workshop .document-actions > #share-character {
-    display: none;
-  }
-  .character-menu-content .mobile-character-action {
-    display: inline-flex;
-  }
-}
 dialog {
   color: #d8dedf;
   background: #1b272e;
@@ -790,6 +747,16 @@ dialog input {
 .catalog-heading > span {
   display: flex;
   color: #c7b37f;
+}
+.randomize-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.token-defaults {
+  display: block;
+  margin-left: auto;
 }
 #catalog-toolbar {
   flex-shrink: 0;

@@ -40,6 +40,10 @@ On Pages, sign in to open My characters, then choose an existing build or the Ne
 
 **Rename** edits a library card without opening its character. New characters start with no equipment, Fit figure and Autoframe enabled, a soft 5 px outline, a 45% cast shadow and 50% pose speed. These defaults do not overwrite existing saved settings. Race search matches both Dracthyr and its Visage form; fixed or empty customization controls are hidden. The bottom **Head view** button brings the face closer for customization.
 
+Head and body settings are remembered separately for each race and body within the same saved character. Switch back to recover its appearance. **Randomize** in Race, Head or Body rolls a new appearance; Armor and Weapons have their own independent rolls. Returning to an equipped slot reopens its available variations. **Sign out** is a direct top-bar button.
+
+**Defaults** in Token export restores Fit figure, Autoframe, glow, shadow, pose speed and the other export settings. It preserves the character and current pose. Autoframe analyzes a hidden model, so editing never fast-forwards the displayed animation or releases a held pose.
+
 **Autoframe** in Zoom & framing disables the manual zoom/padding sliders and fits the pose, weapons, glow and shadow. It keeps your chosen token position and analyzes the whole animation before settling on a fixed fit. Changing equipment, pose or angle recalculates it; further manual positioning reuses that result. Turn Autoframe off for deliberate crops. The first framing calculation can take a moment and is cancelled when you choose another edit.
 
 Dracthyr's dragon form has native armor customizations in **Armor → Dragon armor**. Its equipment view shows the supported shoulder, belt and tabard slots. **Visage form** switches to the humanoid model for ordinary clothing. This reflects the forms exposed by the [source viewer](https://www.wowhead.com/guide/races/dracthyr-overview).

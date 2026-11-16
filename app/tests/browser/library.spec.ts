@@ -82,8 +82,14 @@ async function fixture(
         const asset = path.slice(
           "/functions/v1/model-assets/wow-assets/".length,
         );
+        const cachedAsset = asset.replace(
+          /\/view-\d+\/q-(?:low|medium|high)\//,
+          "/",
+        );
         try {
-          const bytes = await readFile(resolve(root, ".cache/assets", asset));
+          const bytes = await readFile(
+            resolve(root, ".cache/assets", cachedAsset),
+          );
           return route.fulfill({
             body: bytes,
             contentType: asset.endsWith(".js")
@@ -97,7 +103,7 @@ async function fixture(
         } catch {
           return route.fulfill({
             response: await route.fetch({
-              url: `http://127.0.0.1:5173/wow-assets/${asset}`,
+              url: `${process.env.FORGE_ASSET_TEST_URL ?? "http://127.0.0.1:5173"}/wow-assets/${asset}`,
             }),
           });
         }
@@ -393,4 +399,65 @@ test("an empty account gets the same new-character tile, and shared builds can b
   );
   await heldPose(page, "Ready2H");
   expect(backend.rows).toHaveLength(1);
+});
+
+test("online race presets survive reopening and Sign out is directly accessible on narrow screens", async ({
+  page,
+}) => {
+  test.setTimeout(240000);
+  const original = character("Race explorer");
+  original.config.token.autoframe = true;
+  const backend = await fixture(page, [original]);
+  await login(page);
+  await page.locator(`[data-open="${original.id}"]`).click();
+  await ready(page);
+  await page.evaluate(async () => (window as any).forge.whenPreviewReady());
+  await page
+    .getByRole("button", { name: "Randomize character", exact: true })
+    .click();
+  await ready(page);
+  const human = await page.evaluate(
+    () => (window as any).forge.config.customizations,
+  );
+  await page.evaluate(async () => {
+    const f = (window as any).forge,
+      next = f.config;
+    next.raceId = 2;
+    next.bodyId = 0;
+    next.customizations = {};
+    await f.changeCharacter(next);
+  });
+  await ready(page);
+  // Opening the library flushes autosave before the fixture is inspected.
+  await page.locator("#my-characters").click();
+  expect(backend.rows[0].config.raceCustomizations?.["1:0"]).toEqual(human);
+  await page.reload();
+  await expect(page.locator(`[data-open="${original.id}"]`)).toBeVisible();
+  await page.locator(`[data-open="${original.id}"]`).click();
+  await ready(page);
+  await page.evaluate(async () => {
+    const f = (window as any).forge,
+      next = f.config;
+    next.raceId = 1;
+    next.bodyId = 0;
+    next.customizations = {};
+    await f.changeCharacter(next);
+  });
+  await ready(page);
+  expect(
+    await page.evaluate(() => (window as any).forge.config.customizations),
+  ).toEqual(human);
+  await expect(page.locator(".character-menu")).toHaveCount(0);
+  for (const width of [1440, 820, 600, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const signout = page.getByRole("button", { name: "Sign out", exact: true });
+    await expect(signout).toBeVisible();
+    await expect(signout).toBeInViewport();
+    await expect(page.locator("#share-character")).toBeInViewport();
+  }
+  await page.screenshot({
+    path: test.info().outputPath("direct-signout-mobile.png"),
+  });
+  await page.locator("#sign-out").click();
+  await expect(page.locator("[name=username]")).toBeVisible();
 });

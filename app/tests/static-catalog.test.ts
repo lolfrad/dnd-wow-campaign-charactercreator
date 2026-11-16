@@ -8,7 +8,11 @@ import {
   type CatalogRow,
   type StaticCatalogIndex,
 } from "../src/static-catalog";
-import { queryCatalogue, catalogueItem } from "../server/catalog";
+import {
+  queryCatalogue,
+  catalogueItem,
+  randomCatalogue,
+} from "../server/catalog";
 const db = new DatabaseSync(
   resolve(import.meta.dirname, "../data/catalog.sqlite"),
   { readOnly: true },
@@ -89,5 +93,23 @@ test("static saved-ID lookup preserves aliases and variants have distinct displa
   assert.equal(
     new Set(variants.items.map((i: any) => i.displayId)).size,
     variants.items.length,
+  );
+  for (const kind of ["armor", "weapons"] as const) {
+    for (const result of [
+      await catalog.request(`/api/catalog/random?kind=${kind}`),
+      randomCatalogue(kind, "randomization-test"),
+    ]) {
+      assert.ok(result.items.length >= (kind === "armor" ? 11 : 1));
+      for (const roll of result.items)
+        assert.equal(
+          ["mainHand", "offHand"].includes(roll.slot),
+          kind === "weapons",
+        );
+      if (kind === "weapons" && result.items[0].item.hands === 2)
+        assert.equal(result.items.length, 1);
+    }
+  }
+  await assert.rejects(() =>
+    catalog.request("/api/catalog/random?kind=anything"),
   );
 });

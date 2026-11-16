@@ -3,6 +3,7 @@ import type { ViewerAdapter } from "./viewer-adapter";
 import { outlinePixels } from "./outline";
 import { tokenLayout } from "./token-layout";
 import type { Point } from "./token-layout";
+import { animationEnvelope, envelopeBounds } from "./autoframe";
 
 export interface PixelBounds {
   left: number;
@@ -174,6 +175,10 @@ export async function renderToken(
   preview = false,
   signal?: AbortSignal,
 ) {
+  const envelope = config.token.autoframe
+    ? await animationEnvelope(adapter, config, signal)
+    : undefined;
+  signal?.throwIfAborted();
   const wasPaused = config.pose.paused;
   adapter.pause(true);
   try {
@@ -183,10 +188,7 @@ export async function renderToken(
           size * config.settings.exportScale,
           adapter.maximumCaptureSize(),
         );
-    if (config.token.autoframe) {
-      const { animationEnvelope, envelopeBounds } = await import("./autoframe");
-      const envelope = await animationEnvelope(adapter, config, signal);
-      signal?.throwIfAborted();
+    if (envelope) {
       const frame = await adapter.captureFrame(sampleSize, envelope.camera);
       const raw = await decode(frame.url);
       signal?.throwIfAborted();

@@ -1,6 +1,7 @@
 import type { PreviewScene } from "./catalog";
 import { previewKey, staticPreview, referenceScene } from "./catalog";
-import type { Bootstrap } from "./types";
+import type { Bootstrap, CharacterConfig } from "./types";
+import type { Envelope } from "./autoframe";
 import { appUrl, cloudEnabled } from "./runtime";
 
 export class PreviewGallery {
@@ -23,6 +24,15 @@ export class PreviewGallery {
     epoch: number;
   }[] = [];
   private active = false;
+  private measuring = 0;
+  private measurements = new Map<
+    number,
+    {
+      resolve: (value: Envelope) => void;
+      reject: (error: Error) => void;
+      timer: ReturnType<typeof setTimeout>;
+    }
+  >();
   private epoch = 0;
   private requestId = 0;
   private rpc = new Map<
@@ -64,6 +74,15 @@ export class PreviewGallery {
         return;
       if (event.data?.type === "forge-preview-ready") {
         this.resolveReady();
+        return;
+      }
+      if (event.data?.type === "forge-framing-result") {
+        const pending = this.measurements.get(event.data.id);
+        if (!pending) return;
+        this.measurements.delete(event.data.id);
+        clearTimeout(pending.timer);
+        if (event.data.error) pending.reject(new Error(event.data.error));
+        else pending.resolve(event.data.envelope);
         return;
       }
       if (event.data?.type !== "forge-preview-result") return;
@@ -194,7 +213,7 @@ export class PreviewGallery {
     if (this.active) return;
     this.active = true;
     try {
-      while (this.queue.length) {
+      while (this.queue.length && !this.measuring) {
         const viewport = this.scrollRoot.getBoundingClientRect();
         const priority = (job: (typeof this.queue)[number]) => {
           const rect = job.image.getBoundingClientRect();
@@ -234,6 +253,21 @@ export class PreviewGallery {
     }
   }
   async render(scene: PreviewScene): Promise<string> {
+    await this.waitReady();
+    const id = ++this.requestId;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.rpc.delete(id);
+        reject(new Error("Preview timed out."));
+      }, 120000);
+      this.rpc.set(id, { resolve, reject, timer });
+      this.frame.contentWindow!.postMessage(
+        { type: "forge-preview", id, scene: referenceScene(scene, this.data) },
+        location.origin,
+      );
+    });
+  }
+  private async waitReady() {
     let readyTimer: ReturnType<typeof setTimeout>;
     try {
       await Promise.race([
@@ -253,18 +287,50 @@ export class PreviewGallery {
     } finally {
       clearTimeout(readyTimer!);
     }
+  }
+  async measure(
+    config: CharacterConfig,
+    distance: number,
+    signal?: AbortSignal,
+  ): Promise<Envelope> {
     const id = ++this.requestId;
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.rpc.delete(id);
-        reject(new Error("Preview timed out."));
-      }, 120000);
-      this.rpc.set(id, { resolve, reject, timer });
-      this.frame.contentWindow!.postMessage(
-        { type: "forge-preview", id, scene: referenceScene(scene, this.data) },
-        location.origin,
-      );
-    });
+    this.measuring++;
+    let cancel: (() => void) | undefined;
+    try {
+      await this.waitReady();
+      signal?.throwIfAborted();
+      return await new Promise<Envelope>((resolve, reject) => {
+        cancel = () => {
+          const pending = this.measurements.get(id);
+          if (!pending) return;
+          clearTimeout(pending.timer);
+          this.measurements.delete(id);
+          this.frame.contentWindow!.postMessage(
+            { type: "forge-framing-cancel", id },
+            location.origin,
+          );
+          reject(new DOMException("Framing cancelled", "AbortError"));
+        };
+        const timer = setTimeout(() => {
+          this.measurements.delete(id);
+          this.frame.contentWindow!.postMessage(
+            { type: "forge-framing-cancel", id },
+            location.origin,
+          );
+          reject(new Error("Framing preview timed out."));
+        }, 120000);
+        this.measurements.set(id, { resolve, reject, timer });
+        signal?.addEventListener("abort", cancel, { once: true });
+        this.frame.contentWindow!.postMessage(
+          { type: "forge-framing", id, config, distance },
+          location.origin,
+        );
+      });
+    } finally {
+      if (cancel) signal?.removeEventListener("abort", cancel);
+      this.measuring--;
+      void this.pump();
+    }
   }
   async clear() {
     this.memory.clear();

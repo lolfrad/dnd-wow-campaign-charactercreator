@@ -31,6 +31,7 @@ export function defaultConfig(data: Bootstrap): CharacterConfig {
       bodyId: 0,
       classId: 1,
       customizations: { 11: 49 },
+      raceCustomizations: {},
       equipment: {},
       pose: { animation: "Stand", paused: true },
       view: { elevation: 0, facing: 0, zoom: 1 },
@@ -199,6 +200,7 @@ export function validateConfig(
     classId,
     ...(npc ? { npc } : {}),
     customizations: {},
+    raceCustomizations: {},
     equipment: {},
     pose: { animation: pose.animation, paused: boolean(pose.paused, "Paused") },
     view: camera(value.view),
@@ -243,6 +245,38 @@ export function validateConfig(
     },
   };
   const { body } = modelFor(config, data);
+  const presets =
+    value.raceCustomizations === undefined
+      ? {}
+      : object(value.raceCustomizations, "Race customizations");
+  if (
+    Object.keys(presets).length >
+    data.races.reduce((n, race) => n + race.bodies.length, 0)
+  )
+    throw new Error("Too many saved race customizations.");
+  for (const [key, raw] of Object.entries(presets)) {
+    if (!/^[1-9]\d*:(0|[1-9]\d*)$/.test(key))
+      throw new Error("Invalid race customization key.");
+    const [race, body] = key.split(":").map(Number);
+    const model = data.races
+      .find((r) => r.id === race)
+      ?.bodies.find((b) => b.id === body);
+    if (!model) throw new Error("Saved race/body is unavailable.");
+    const selections: Record<string, number> = {};
+    for (const [optionId, choice] of Object.entries(
+      object(raw, "Saved appearance"),
+    )) {
+      if (
+        !/^(0|[1-9]\d*)$/.test(optionId) ||
+        !(data.options[model.modelId] ?? [])
+          .find((o) => o.id === Number(optionId))
+          ?.choices.some((c) => c.id === choice)
+      )
+        throw new Error("Invalid saved race customization.");
+      selections[optionId] = Number(choice);
+    }
+    config.raceCustomizations![key] = selections;
+  }
   const options = data.options[body.modelId] ?? [];
   for (const [id, choice] of Object.entries(
     object(value.customizations, "Customizations"),
@@ -304,5 +338,13 @@ export function equip(
   }
   if (category === "offHand" && id && main?.hands === 2)
     delete next.equipment.mainHand;
+  return next;
+}
+
+export function resetExportSettings(config: CharacterConfig, data: Bootstrap) {
+  const next = structuredClone(config),
+    defaults = defaultConfig(data);
+  next.token = defaults.token;
+  next.settings.exportScale = defaults.settings.exportScale;
   return next;
 }
