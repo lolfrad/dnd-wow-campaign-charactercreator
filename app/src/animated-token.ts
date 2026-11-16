@@ -72,7 +72,8 @@ export async function recordAnimatedToken(
       zoom: (calibration.source.camera?.zoom ?? 0.65) * 0.8,
     };
     let frames: { source: TokenSource; time: number }[] = [];
-    for (let attempt = 0; attempt < 2; attempt++) {
+    const attempts = config.token.autoframe ? 4 : 2;
+    for (let attempt = 0; attempt < attempts; attempt++) {
       frames = [];
       let clipped = false;
       poseRecording?.restore();
@@ -104,7 +105,7 @@ export async function recordAnimatedToken(
         await delay(0);
       }
       if (!clipped) break;
-      if (attempt === 1)
+      if (attempt === attempts - 1)
         throw new Error(
           "Animation reaches the capture edge. Choose a steadier pose or turn off pose animation.",
         );

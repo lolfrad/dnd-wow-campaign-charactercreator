@@ -159,6 +159,7 @@ export function sceneConfig(
     zoom: 1,
     padding: 8,
     anchor: "figure",
+    autoframe: false,
     offset: { x: 0, y: 0 },
     outline: { enabled: false, color: "#000000", width: 1, style: "crisp" },
     shadow: { enabled: false, opacity: 35 },

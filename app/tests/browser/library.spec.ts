@@ -10,6 +10,7 @@ import type { CloudCharacter } from "../../src/document-store";
 // checks never create accounts or change characters in the hosted project.
 const url = process.env.FORGE_LIBRARY_TEST_URL;
 test.skip(!url, "Set FORGE_LIBRARY_TEST_URL to a running Pages-mode frontend.");
+test.use({ serviceWorkers: "block" });
 const root = resolve(import.meta.dirname, "../../..");
 const data: Bootstrap = JSON.parse(
   await readFile(resolve(root, "app/data/bootstrap.json"), "utf8"),
@@ -19,6 +20,7 @@ function character(name: string, npc = false): CloudCharacter {
   const config = defaultConfig(data);
   config.name = name;
   config.equipment = {};
+  config.token.autoframe = false;
   config.pose = { animation: npc ? "ReadyUnarmed" : "Ready2H", paused: true };
   if (npc) {
     config.npc = {
@@ -243,6 +245,17 @@ test("login and reload start in the library; card duplication opens the selected
     false,
   );
   expect(backend.writes).toBe(0);
+  await page.locator(`[data-rename="${original.id}"]`).click();
+  await page
+    .getByRole("textbox", { name: `New name for ${original.name}` })
+    .fill("Renamed without opening");
+  await page.getByRole("button", { name: "Save name", exact: true }).click();
+  await expect(page.locator(`[data-open="${original.id}"]`)).toContainText(
+    "Renamed without opening",
+  );
+  expect(await page.evaluate(() => !!(window as any).forge.adapter)).toBe(
+    false,
+  );
   await page.locator(`[data-open="${original.id}"]`).click();
   await ready(page);
   await heldPose(page, "Ready2H");
@@ -273,11 +286,32 @@ test("login and reload start in the library; card duplication opens the selected
   const metadata = await sharp(bytes).metadata();
   expect(metadata).toMatchObject({ width: 512, height: 512, hasAlpha: true });
   expect(bytes.length).toBeLessThanOrEqual(131072);
+  await page.evaluate(() => {
+    (window as any).beforeRename = (window as any).forge.adapter;
+  });
+  await page.locator(`[data-rename="${original.id}"]`).click();
+  await page
+    .getByRole("textbox", { name: "New name for Renamed without opening" })
+    .fill("Renamed active character");
+  await page.getByRole("button", { name: "Save name", exact: true }).click();
+  await expect(page.locator(`[data-open="${original.id}"]`)).toContainText(
+    "Renamed active character",
+  );
+  expect(
+    await page.evaluate(
+      () => (window as any).forge.adapter === (window as any).beforeRename,
+    ),
+  ).toBe(true);
+  await expect(page.locator("#character-name")).toHaveValue(
+    "Renamed active character",
+  );
+  await expect(page.locator("#document-status")).toHaveText("Saved online");
   await page.screenshot({
     path: test.info().outputPath("character-library.png"),
   });
   const actions = page.locator(`[data-duplicate="${guard.id}"]`).locator("..");
   expect(await actions.locator("button").allTextContents()).toEqual([
+    "Rename",
     "Duplicate",
     "Delete",
   ]);

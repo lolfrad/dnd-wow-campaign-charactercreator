@@ -9,6 +9,7 @@ The Supabase integration is implemented for the Pages build. The local Node work
 - Sign-in before initializing the cloud editor or opening a shared character.
 - My characters appears after every login and page load. Select a saved build or the New character tile; Duplicate beside Delete opens an independent copy. Online edits autosave, with no JSON or copy controls in the top bar.
 - Shared links load the latest saved version when opened. Recipients must sign in and may save an independent copy.
+- Library cards can be renamed without opening the renderer. The existing save RPC preserves ownership and revision checks; no schema change is needed. An active document accepts a rename only if no unrelated remote edits are being hidden.
 - Supabase stores character JSON and small private thumbnails. Character builds are not saved in localStorage in cloud mode; only the login session and disposable preview caches are stored in the browser.
 
 ## Architecture

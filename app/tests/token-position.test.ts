@@ -137,6 +137,7 @@ test("old saves gain head centering and invalid token offsets are rejected", () 
 
 test("closer token crops and full-pose speed settings survive save validation", () => {
   const config = defaultConfig(data);
+  config.token.autoframe = false;
   config.token.zoom = 4;
   config.token.padding = 0;
   config.token.animation.duration = "pose";

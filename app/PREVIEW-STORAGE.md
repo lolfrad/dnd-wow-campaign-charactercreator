@@ -14,6 +14,7 @@ The optimized average is approximately 6,035 bytes per image. The complete Pages
 
 - **Shared race/equipment/appearance/pose previews:** versioned static WebP files on GitHub Pages. Everyone reuses them, with no Supabase function or database query for each image. Normal browser HTTP caching also reduces repeated downloads.
 - **On-demand reference previews:** render missing scenes in the isolated browser viewer, then cache the result by scene and asset snapshot in IndexedDB. The underlying model files use stable cacheable URLs, so later poses can reuse downloaded assets.
+- **Downloaded game files:** the Pages service worker caches only authenticated model/texture requests, up to 192 MiB in each browser. Cache hits avoid Supabase function calls, including for XHR textures and after token refresh. Characters, auth responses and exports bypass this cache. No asset pack is uploaded to Supabase Storage.
 - **Saved-character library thumbnails:** one private 512-pixel WebP per character in Supabase Storage, captured separately from the small live token preview and updated after it settles. The library requests signed URLs in a batch. Each file is capped at 128 KiB and replaces its earlier version.
 - **Exported tokens/animations:** download to the user; they are not uploaded into the character database or file bucket.
 

@@ -123,3 +123,29 @@ test("shared documents never write and an empty name cannot be reported as saved
   assert.equal(calls, 0);
   assert.equal(store.dirty, true);
 });
+test("library renaming updates the active revision without silently accepting unrelated remote changes", async () => {
+  let writes = 0;
+  const store = new DocumentStore(
+    {
+      async save() {
+        writes++;
+        return row("written");
+      },
+    },
+    "test",
+    () => {},
+    100000,
+  );
+  store.bind(row("original"));
+  store.acceptRename(row("renamed", 2));
+  assert.equal(store.document!.name, "renamed");
+  assert.equal(store.document!.revision, 2);
+  assert.equal(store.state, "saved");
+  const changed = row("remote title", 4);
+  changed.config = { ...changed.config, raceId: 2 };
+  store.acceptRename(changed);
+  assert.equal(store.state, "conflict");
+  store.change(config("next edit"));
+  await assert.rejects(store.flush(), /Reopen/);
+  assert.equal(writes, 0);
+});

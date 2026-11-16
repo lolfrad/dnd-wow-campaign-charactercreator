@@ -66,6 +66,23 @@ export class DocumentStore {
       void this.flush().catch(() => {});
     }, this.delay);
   }
+  acceptRename(record: CloudCharacter) {
+    if (!this.document || record.id !== this.document.id) return;
+    const expected = { ...this.document.config, name: record.name };
+    if (
+      this.conflict ||
+      JSON.stringify(expected) !== JSON.stringify(record.config)
+    ) {
+      clearTimeout(this.timer);
+      this.conflict = true;
+      this.emit(
+        "conflict",
+        "This character also changed in another tab. Reopen it from My characters to load those changes.",
+      );
+      return;
+    }
+    this.bind(record);
+  }
   flush(): Promise<void> {
     clearTimeout(this.timer);
     if (this.readOnly) return Promise.resolve();

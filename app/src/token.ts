@@ -172,6 +172,7 @@ export async function renderToken(
   config: CharacterConfig,
   size: number,
   preview = false,
+  signal?: AbortSignal,
 ) {
   const wasPaused = config.pose.paused;
   adapter.pause(true);
@@ -182,6 +183,31 @@ export async function renderToken(
           size * config.settings.exportScale,
           adapter.maximumCaptureSize(),
         );
+    if (config.token.autoframe) {
+      const { animationEnvelope, envelopeBounds } = await import("./autoframe");
+      const envelope = await animationEnvelope(adapter, config, signal);
+      signal?.throwIfAborted();
+      const frame = await adapter.captureFrame(sampleSize, envelope.camera);
+      const raw = await decode(frame.url);
+      signal?.throwIfAborted();
+      const bounds = envelopeBounds(
+        envelope,
+        sampleSize,
+        raw.bounds,
+        frame.head,
+        config.token.anchor === "head",
+      );
+      return composeToken(
+        {
+          canvas: raw.canvas,
+          bounds,
+          head: frame.head,
+          camera: envelope.camera,
+        },
+        config,
+        size,
+      );
+    }
     const camera: Camera = { ...config.token, zoom: 0.3 };
     const capture = async () => {
       const frame = await adapter.captureFrame(sampleSize, camera);

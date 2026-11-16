@@ -31,12 +31,7 @@ export function defaultConfig(data: Bootstrap): CharacterConfig {
       bodyId: 0,
       classId: 1,
       customizations: { 11: 49 },
-      equipment: {
-        chest: "item-15064",
-        legs: "item-15065",
-        feet: "item-16957",
-        waist: "item-13118",
-      },
+      equipment: {},
       pose: { animation: "Stand", paused: true },
       view: { elevation: 0, facing: 0, zoom: 1 },
       token: {
@@ -45,16 +40,17 @@ export function defaultConfig(data: Bootstrap): CharacterConfig {
         zoom: 1,
         size: 512,
         padding: 10,
-        anchor: "head",
+        anchor: "figure",
+        autoframe: true,
         offset: { x: 0, y: 0 },
-        outline: { enabled: false, color: "#171b21", width: 3, style: "crisp" },
-        shadow: { enabled: false, opacity: 35 },
+        outline: { enabled: true, color: "#171b21", width: 5, style: "soft" },
+        shadow: { enabled: true, opacity: 45 },
         animation: {
           format: "webm",
           duration: "pose",
           fps: 12,
           includePose: true,
-          speed: 1,
+          speed: 0.5,
         },
       },
       settings: { textureQuality: "high", exportScale: 2 },
@@ -95,10 +91,13 @@ function boolean(value: unknown, label: string) {
 }
 function camera(value: unknown, token = false) {
   const v = object(value, "Camera");
+  if (!token && v.focus !== undefined && v.focus !== "head")
+    throw new Error("Unknown camera focus.");
   return {
     elevation: number(v.elevation, token ? 0 : -89, 90, "Elevation"),
     facing: number(v.facing, 0, 360, "Facing"),
     zoom: number(v.zoom, token ? 0.5 : 0.3, 4, "Framing"),
+    ...(!token && v.focus === "head" ? { focus: "head" as const } : {}),
   };
 }
 
@@ -208,6 +207,10 @@ export function validateConfig(
       size: token.size,
       padding: number(token.padding, 0, 24, "Padding"),
       anchor,
+      autoframe:
+        token.autoframe === undefined
+          ? false
+          : boolean(token.autoframe, "Autoframe"),
       offset: {
         x: number(offset.x, -0.45, 0.45, "Token X"),
         y: number(offset.y, -0.45, 0.45, "Token Y"),

@@ -2,6 +2,8 @@ import "./style.css";
 import { ViewerAdapter } from "./viewer-adapter";
 import {
   availableOptions,
+  editableOptions,
+  isDragonArmor,
   normalizeAppearance,
   modelFor,
 } from "./customization";
@@ -24,6 +26,7 @@ import { supabase, currentUser } from "./cloud-client";
 import { cloudRepository, uploadThumbnail } from "./cloud-repository";
 import { DocumentStore, type CloudCharacter } from "./document-store";
 import { requireSignIn, showLibrary, showSharing } from "./cloud-ui";
+import { initializeModelCache, clearModelCache } from "./model-cache";
 import {
   armorSlots,
   bodyName,
@@ -150,6 +153,8 @@ let catalogRequest = 0,
   catalogError = "",
   searchTimer: ReturnType<typeof setTimeout>;
 let recording: AbortController | undefined;
+let previewAbort: AbortController | undefined;
+let dragonArmor = true;
 let cloudDocument: DocumentStore | undefined,
   thumbnailTimer: ReturnType<typeof setTimeout>;
 let activeCloudUser = "";
@@ -177,6 +182,7 @@ $("#app").innerHTML = `
     ["side", "side", "Side"],
     ["overhead", "overhead", "Overhead"],
     ["tilted", "tilted", "Tilted"],
+    ["head", "head", "Head"],
   ]
     .map(
       ([id, svg, name]) =>
@@ -338,6 +344,15 @@ function header() {
     button.title = unavailable
       ? "This model has a fixed appearance"
       : labels[id as Section];
+    if (id === "head" || id === "body") {
+      const choices = editableOptions(config, data);
+      button.hidden = !choices.some((option) =>
+        id === "head"
+          ? !!headGroup(option)
+          : !headGroup(option) &&
+            !(config.raceId === 52 && isDragonArmor(option)),
+      );
+    }
   }
   if (cloudDocument?.readOnly)
     document
@@ -544,6 +559,34 @@ function renderCatalog(keepToolbar = false) {
       extra,
     );
   };
+  const appearanceCards = (option: Option) => {
+    const colors = option.choices.every(
+      (c) => typeof c.color === "string" && /^[a-f0-9]{6}$/i.test(c.color),
+    );
+    return (
+      `<div class="gallery-caption">${esc(option.name)}</div><div class="choice-grid ${colors ? "color-grid" : "appearance-grid"}">` +
+      option.choices
+        .map((choice, index) => {
+          const label = choice.name || `${option.name} ${index + 1}`,
+            selected = config.customizations[option.id] === choice.id;
+          return colors
+            ? `<button class="choice-card color-card ${selected ? "selected" : ""}" data-option="${option.id}" data-choice="${choice.id}" aria-label="${esc(label)}" aria-pressed="${selected}" title="${esc(label)}" data-label="${esc(label)}"><span class="color-swatch" style="background:#${choice.color}"></span>${selected ? `<span class="selection-check">${icon("check", 13)}</span>` : ""}<span class="tile-label">${esc(label)}</span></button>`
+            : add(
+                label,
+                `data-option="${option.id}" data-choice="${choice.id}"`,
+                selected,
+                {
+                  kind: "appearance",
+                  config,
+                  optionId: option.id,
+                  choiceId: choice.id,
+                },
+              );
+        })
+        .join("") +
+      "</div>"
+    );
+  };
   if (section === "npc") {
     tools = `<div class="subcategories">${[
       ["all", "All"],
@@ -568,17 +611,22 @@ function renderCatalog(keepToolbar = false) {
         '<div class="empty-state">No matches</div>' + cataloguePage(result);
   } else if (section === "race") {
     const { body } = modelFor(config, data);
-    tools = `<div class="body-selector" aria-label="Body selection">${chip("data-gender", "0", "Male", preferredGender === 0)}${chip("data-gender", "1", "Female", preferredGender === 1)}${body.gender > 1 ? '<span class="neutral-body">Single body</span>' : ""}</div>`;
+    tools = `${searchBox("Search races")}<div class="body-selector" aria-label="Body selection">${chip("data-gender", "0", "Male", preferredGender === 0)}${chip("data-gender", "1", "Female", preferredGender === 1)}${body.gender > 1 ? '<span class="neutral-body">Single body</span>' : ""}</div>`;
     html =
       '<div class="choice-grid races">' +
       data.races
+        .filter((race) =>
+          `${race.name} ${race.id === 75 ? "Dracthyr" : ""}`
+            .toLowerCase()
+            .includes(search.toLowerCase().trim()),
+        )
         .map((race) => {
           const b =
             race.bodies.find((b) => b.gender === preferredGender) ??
             race.bodies[0];
           const tested = verifiedModels.has(b.modelId);
           return add(
-            race.name,
+            race.id === 75 ? "Dracthyr Visage" : race.name,
             `data-race="${race.id}" data-body="${b.id}"`,
             !config.npc && config.raceId === race.id,
             { kind: "race", raceId: race.id, bodyId: b.id },
@@ -590,7 +638,9 @@ function renderCatalog(keepToolbar = false) {
         .join("") +
       "</div>";
   } else if (section === "head" || section === "body") {
-    const all = availableOptions(config, data),
+    const all = editableOptions(config, data).filter(
+        (option) => config.raceId !== 52 || !isDragonArmor(option),
+      ),
       head = section === "head";
     const options = head ? all.filter((o) => headGroup(o)) : bodyOptions(all);
     const availableGroups = [
@@ -617,40 +667,30 @@ function renderCatalog(keepToolbar = false) {
       tools += `<div class="option-tabs">${inGroup.map((o) => chip("data-option-tab", String(o.id), o.name.replace(/Hair |Facial |Skin |Fur /g, ""), o.id === optionId, o.name)).join("")}</div>`;
     if (!option) html = '<div class="empty-state">No options</div>';
     else {
-      const colors = option.choices.every(
-        (c) => typeof c.color === "string" && /^[a-f0-9]{6}$/i.test(c.color),
-      );
-      html =
-        `<div class="gallery-caption">${esc(option.name)}</div><div class="choice-grid ${colors ? "color-grid" : "appearance-grid"}">` +
-        option.choices
-          .map((choice, index) => {
-            const label = choice.name || `${option.name} ${index + 1}`,
-              selected = config.customizations[option.id] === choice.id;
-            if (colors)
-              return `<button class="choice-card color-card ${selected ? "selected" : ""}" data-option="${option.id}" data-choice="${choice.id}" aria-label="${esc(label)}" aria-pressed="${selected}" title="${esc(label)}" data-label="${esc(label)}"><span class="color-swatch" style="background:#${choice.color}"></span>${selected ? `<span class="selection-check">${icon("check", 13)}</span>` : ""}<span class="tile-label">${esc(label)}</span></button>`;
-            return add(
-              label,
-              `data-option="${option.id}" data-choice="${choice.id}"`,
-              selected,
-              {
-                kind: "appearance",
-                config,
-                optionId: option.id,
-                choiceId: choice.id,
-              },
-            );
-          })
-          .join("") +
-        "</div>";
+      html = appearanceCards(option);
     }
+  } else if (
+    section === "armor" &&
+    !config.npc &&
+    config.raceId === 52 &&
+    dragonArmor
+  ) {
+    const options = editableOptions(config, data).filter(isDragonArmor);
+    const option = options.find((o) => o.id === optionId) ?? options[0];
+    if (option) optionId = option.id;
+    tools = `<p class="settings-hint">Dragon armor is customized separately from ordinary clothing. Use Visage for full clothing.</p><div class="segmented">${chip("data-dragon-armor", "custom", "Dragon armor", true)}${chip("data-dragon-armor", "equipment", "Equipment", false)}<button id="show-visage" class="chip">Visage form</button></div><div class="option-tabs">${options.map((o) => chip("data-option-tab", String(o.id), o.name, o.id === optionId)).join("")}</div>`;
+    html = option ? appearanceCards(option) : "";
   } else if (section === "armor" || section === "weapons") {
+    const dragon = !config.npc && config.raceId === 52;
+    if (dragon && !["shoulders", "waist", "tabard"].includes(slot))
+      slot = "shoulders";
     const weapons = section === "weapons",
       activeSlot = weapons ? weaponSlot : slot;
     const key = catalogueKey(),
       result = catalogCache.get(key),
       facets = result?.facets;
     if (!result) requestCatalogue(key);
-    tools = `<div class="slot-strip" aria-label="Equipment slots">${(weapons ? categories.filter((c) => c.id === "mainHand" || c.id === "offHand") : categories.filter((c) => armorSlots.includes(c.id))).map((c) => iconChip("data-slot", c.id, c.label, c.id === activeSlot)).join("")}</div>`;
+    tools = `${dragon && !weapons ? `<p class="settings-hint">Dragon form supports shoulders, belts and tabards. Other clothing is available in Visage form.</p><div class="segmented">${chip("data-dragon-armor", "custom", "Dragon armor", false)}${chip("data-dragon-armor", "equipment", "Equipment", true)}<button id="show-visage" class="chip">Visage form</button></div>` : ""}<div class="slot-strip" aria-label="Equipment slots">${(weapons ? categories.filter((c) => c.id === "mainHand" || c.id === "offHand") : categories.filter((c) => armorSlots.includes(c.id) && (!dragon || ["shoulders", "waist", "tabard"].includes(c.id)))).map((c) => iconChip("data-slot", c.id, c.label, c.id === activeSlot)).join("")}</div>`;
     tools += searchBox(weapons ? "Search weapons" : "Search armor");
     if (weapons) {
       const types = [
@@ -727,6 +767,7 @@ function renderCatalog(keepToolbar = false) {
     if (result && !items.length)
       html += '<div class="empty-state">No matches</div>';
   } else if (section === "poses") {
+    const availablePoses = adapter.animations();
     const groups = {
       all: "All",
       idle: "Idle",
@@ -734,9 +775,14 @@ function renderCatalog(keepToolbar = false) {
       emotes: "Emotes",
       magic: "Magic",
     };
+    const poseGroups = Object.entries(groups).filter(
+      ([id]) =>
+        id === "all" || availablePoses.some((name) => poseGroup(name) === id),
+    );
+    if (!poseGroups.some(([id]) => id === poseFilter)) poseFilter = "all";
     tools =
       searchBox("Search poses") +
-      `<div class="filter-strip">${Object.entries(groups)
+      `<div class="filter-strip">${poseGroups
         .map(([id, label]) =>
           chip("data-pose-filter", id, label, poseFilter === id),
         )
@@ -749,8 +795,7 @@ function renderCatalog(keepToolbar = false) {
       "EmoteWave",
       "SpellCastOmni",
     ];
-    const poses = adapter
-      .animations()
+    const poses = availablePoses
       .filter(
         (name) =>
           (poseFilter === "all" || poseGroup(name) === poseFilter) &&
@@ -782,7 +827,7 @@ function renderCatalog(keepToolbar = false) {
     html = `<div class="token-editor"><div class="token-preview ${background}" id="token-background" tabindex="0" role="group" aria-label="Token position. Drag or use arrow keys. Home centers the head." title="Drag to position · Arrow keys to nudge"><img id="token-preview" alt="Live transparent token preview" draggable="false" ${tokenUrl ? `src="${tokenUrl}"` : "hidden"}><span class="token-pivot" aria-hidden="true"></span></div><div class="token-position-tools"><button id="center-head" class="chip ${config.token.anchor === "head" ? "selected" : ""}" title="Center head">${icon("head", 16)} Center head</button><button id="center-figure" class="chip ${config.token.anchor === "figure" ? "selected" : ""}" title="Fit figure">${icon("front", 16)} Fit figure</button><span>Drag to position</span></div><div class="background-options"><button data-background="checker" class="swatch checker ${background === "checker" ? "selected" : ""}" title="Checkerboard" aria-label="Checkerboard background"></button><button data-background="light" class="swatch light ${background === "light" ? "selected" : ""}" title="Light" aria-label="Light background"></button><button data-background="dark" class="swatch dark ${background === "dark" ? "selected" : ""}" title="Dark" aria-label="Dark background"></button></div>
    <div class="segmented">${chip("data-token-view", "90", "Overhead", config.token.elevation === 90)}${chip("data-token-view", "75", "Tilted", config.token.elevation === 75)}</div>
    ${slider("token-elevation", "Elevation", 0, 90, config.token.elevation, "°")}${slider("token-facing", "Facing", 0, 360, config.token.facing, "°")}
-   ${tokenSection("zoom", "Zoom & framing", `${slider("token-zoom", "Framing", 50, 400, config.token.zoom * 100, "%")}${slider("token-padding", "Padding", 0, 24, config.token.padding, "%")}<p class="settings-hint">Zoom above 100% to crop closer. Drag the token to position the part you want to keep.</p>`)}
+   ${tokenSection("zoom", "Zoom & framing", `<div class="setting-row"><label for="token-autoframe">Autoframe</label><input id="token-autoframe" type="checkbox" ${config.token.autoframe ? "checked" : ""}></div><fieldset class="framing-sliders" ${config.token.autoframe ? "disabled" : ""}>${slider("token-zoom", "Framing", 50, 400, config.token.zoom * 100, "%")}${slider("token-padding", "Padding", 0, 24, config.token.padding, "%")}</fieldset><p class="settings-hint">${config.token.autoframe ? "Fits the whole pose, equipment, glow and shadow. Your position stays where you put it." : "Zoom above 100% to crop closer. Drag the token to position it."}</p>`)}
    ${tokenSection("outline", "Outline", `<div class="setting-row"><label for="outline-enabled">Enable outline</label><input id="outline-enabled" type="checkbox" role="switch" ${config.token.outline.enabled ? "checked" : ""}></div><div class="segmented" aria-label="Outline style">${chip("data-outline-style", "crisp", "Crisp", config.token.outline.style === "crisp")}${chip("data-outline-style", "soft", "Soft glow", config.token.outline.style === "soft")}</div><div class="outline-controls"><input id="outline-color" type="color" aria-label="Outline color" value="${config.token.outline.color}">${slider("outline-width", "Width", 1, 12, config.token.outline.width, "px")}</div>`)}
    ${tokenSection("shadow", "Shadow", `<div class="setting-row"><label for="shadow-enabled">Cast shadow</label><input id="shadow-enabled" type="checkbox" role="switch" ${config.token.shadow.enabled ? "checked" : ""}></div>${slider("shadow-opacity", "Shadow opacity", 0, 100, config.token.shadow.opacity, "%")}<p class="settings-hint">A soft silhouette cast below the character, as if lit from above.</p>`)}
    <div class="segmented">${chip("data-size", "512", "512 × 512", config.token.size === 512)}${chip("data-size", "1024", "1024 × 1024", config.token.size === 1024)}</div><button class="primary wide" id="token-download">${icon("export", 18)} Export PNG</button>
@@ -814,6 +859,9 @@ function renderCatalog(keepToolbar = false) {
         "",
       )}</div><p class="settings-hint">Larger renders are downsampled to your chosen PNG size.</p><h2>View</h2>${slider("view-elevation", "Elevation", -45, 90, config.view.elevation, "°")}${slider("view-facing", "Facing", 0, 360, config.view.facing, "°")}<button id="clear-previews" class="secondary wide">Refresh previews</button><span class="version">Retail ${esc(data.gameVersion)}</span></div>`;
   }
+  if (section === "settings" && cloudEnabled)
+    html +=
+      '<h2>Downloaded models</h2><p class="settings-hint">Models and textures you use are cached in this browser, up to 192 MiB. Characters stay saved online.</p><button id="clear-models" class="secondary wide">Clear downloaded models</button>';
   if (!keepToolbar) {
     const focused = document.activeElement as HTMLInputElement;
     const focusedId = focused?.closest("#catalog-toolbar") ? focused.id : "";
@@ -931,6 +979,7 @@ async function operation(action: () => Promise<void>, record = true) {
   if (busy) return;
   setBusy(true);
   clearTimeout(previewTimer);
+  previewAbort?.abort();
   await previewing;
   const before = structuredClone(config);
   tokenSource = undefined;
@@ -986,6 +1035,7 @@ async function updatePreview() {
     return;
   }
   previewing = (async () => {
+    const abort = (previewAbort = new AbortController());
     try {
       const key = JSON.stringify([
         generation,
@@ -995,16 +1045,19 @@ async function updatePreview() {
         config.pose,
         config.token.elevation,
         config.token.facing,
+        config.token.autoframe,
+        config.token.animation.includePose,
       ]);
       const result =
         tokenSource && tokenSourceKey === key && config.pose.paused
           ? composeToken(tokenSource, config, 320)
-          : await renderToken(adapter, config, 320, true);
+          : await renderToken(adapter, config, 320, true, abort.signal);
       tokenSource = result.source;
       tokenSourceKey = key;
       tokenPlacement = { anchor: result.anchor, tracked: result.tracked };
       showToken(result.url);
     } catch (error) {
+      if ((error as Error).name === "AbortError") return;
       const status = document.querySelector("#export-status");
       if (status)
         status.textContent =
@@ -1058,7 +1111,14 @@ async function writeLibraryThumbnail() {
   // The library needs its own full-resolution capture. Upscaling the small
   // live token preview loses detail before the image even reaches storage.
   const writing = (async () => {
-    const result = await renderToken(adapter, structuredClone(config), 512);
+    const abort = (previewAbort = new AbortController());
+    const result = await renderToken(
+      adapter,
+      structuredClone(config),
+      512,
+      false,
+      abort.signal,
+    );
     if (
       cloudDocument?.document?.id !== record.id ||
       JSON.stringify(config) !== captured
@@ -1123,10 +1183,12 @@ async function exportAnimation() {
   $("#cancel-recording").hidden = true;
 }
 async function applyCamera(camera: CharacterConfig["view"]) {
+  previewAbort?.abort();
   await previewing;
   config.view = camera;
   adapter.camera(camera);
   persist("camera");
+  if (!tokenSource) schedulePreview();
 }
 let tokenDrag:
   | {
@@ -1344,6 +1406,25 @@ document.addEventListener("click", async (event) => {
     navigate(target.dataset.section as Section);
     return;
   }
+  if (target.dataset.dragonArmor) {
+    dragonArmor = target.dataset.dragonArmor === "custom";
+    optionId = 0;
+    renderCatalog();
+    return;
+  }
+  if (target.id === "show-visage") {
+    const visage = data.races.find((race) => race.id === 75)!;
+    const body =
+      visage.bodies.find((b) => b.gender === preferredGender) ??
+      visage.bodies[0];
+    await changeCharacter({
+      ...config,
+      raceId: visage.id,
+      bodyId: body.id,
+      customizations: {},
+    });
+    return;
+  }
   if (target.dataset.background) {
     background = target.dataset.background;
     renderCatalog();
@@ -1477,8 +1558,6 @@ document.addEventListener("click", async (event) => {
     next.hidden = { head: false, shoulders: false };
     next.pose = { animation: "Stand", paused: true };
     next.view = { elevation: 0, facing: 0, zoom: 1 };
-    next.token.anchor = npc.family === "Humanoid" ? "head" : "figure";
-    next.token.offset = { x: 0, y: 0 };
     await changeCharacter(next);
     return;
   }
@@ -1545,7 +1624,8 @@ document.addEventListener("click", async (event) => {
     await applyCamera({
       elevation: id === "overhead" ? 90 : id === "tilted" ? 65 : 0,
       facing: id === "side" ? 90 : 0,
-      zoom: 1,
+      zoom: id === "head" ? 3 : 1,
+      ...(id === "head" ? { focus: "head" as const } : {}),
     });
     document
       .querySelectorAll<HTMLElement>("[data-view]")
@@ -1554,6 +1634,7 @@ document.addEventListener("click", async (event) => {
   }
   if (target.id === "zoom-in" || target.id === "zoom-out") {
     await applyCamera({
+      ...config.view,
       ...adapter.readCamera(),
       zoom: Math.min(
         4,
@@ -1566,6 +1647,7 @@ document.addEventListener("click", async (event) => {
     return;
   }
   if (target.id === "pause") {
+    previewAbort?.abort();
     await previewing;
     config.pose.paused = !config.pose.paused;
     adapter.pause(config.pose.paused);
@@ -1703,6 +1785,15 @@ document.addEventListener("click", async (event) => {
     notify("Previews refreshed");
     return;
   }
+  if (target.id === "clear-models") {
+    try {
+      await clearModelCache();
+      notify("Downloaded models cleared");
+    } catch (error) {
+      notify((error as Error).message, true);
+    }
+    return;
+  }
 });
 document.addEventListener("input", (event) => {
   const target = event.target as HTMLInputElement;
@@ -1747,6 +1838,11 @@ document.addEventListener("input", (event) => {
       const label = document.querySelector("#pose-duration");
       if (label) label.textContent = poseDurationLabel();
       persist(target.id);
+      if (config.token.autoframe) {
+        previewAbort?.abort();
+        tokenSource = undefined;
+        schedulePreview(250);
+      }
     }
     if (target.id === "view-elevation" || target.id === "view-facing") {
       const key = target.id.slice(5) as "elevation" | "facing";
@@ -1775,9 +1871,21 @@ document.addEventListener("change", async (event) => {
     return;
   }
   if (target.id === "animate-pose") {
+    previewAbort?.abort();
     config.token.animation.includePose = target.checked;
     persist();
     renderCatalog();
+    tokenSource = undefined;
+    schedulePreview();
+    return;
+  }
+  if (target.id === "token-autoframe") {
+    config.token.autoframe = target.checked;
+    tokenSource = undefined;
+    previewAbort?.abort();
+    persist();
+    renderCatalog();
+    schedulePreview();
     return;
   }
   if (target.id === "outline-enabled") {
@@ -1827,7 +1935,7 @@ function saveView() {
   clearTimeout(dragTimer);
   dragTimer = setTimeout(() => {
     if (!adapter || busy || previewing) return;
-    config.view = adapter.readCamera();
+    config.view = { ...config.view, ...adapter.readCamera() };
     persist("camera");
   }, 400);
 }
@@ -1919,6 +2027,13 @@ async function openLibrary() {
       tokenSource = undefined;
       savedThumbnailKey = "";
     },
+    renamed: (record) => {
+      if (cloudDocument?.document?.id !== record.id) return;
+      config.name = record.name;
+      cloudDocument.acceptRename(record);
+      lastRecorded = structuredClone(config);
+      header();
+    },
     canClose: () => !!adapter,
     shared: sharedCloudCharacter,
   });
@@ -1985,6 +2100,7 @@ try {
   const gender = modelFor(config, data).body.gender;
   if (gender < 2) preferredGender = gender;
   if (config.npc) section = "npc";
+  await initializeModelCache();
   await ViewerAdapter.initialize(data);
   previews = new PreviewGallery(data, $("#catalog-scroll"));
   $("#app").inert = false;
@@ -2029,6 +2145,11 @@ try {
       previews,
       get tokenPlacement() {
         return structuredClone(tokenPlacement);
+      },
+      async whenPreviewReady() {
+        clearTimeout(previewTimer);
+        await previewing;
+        if (!tokenSource) await updatePreview();
       },
       changeCharacter,
       changeEquipment,

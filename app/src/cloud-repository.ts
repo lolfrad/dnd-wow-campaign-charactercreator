@@ -5,6 +5,7 @@ export const cloudRepository: CharacterRepository & {
   get: (id: string) => Promise<CloudCharacter>;
   shared: (token: string) => Promise<CloudCharacter | null>;
   remove: (document: CloudCharacter) => Promise<void>;
+  rename: (document: CloudCharacter, name: string) => Promise<CloudCharacter>;
 } = {
   async save(id, revision, config, snapshot) {
     const { data, error } = await supabase!
@@ -46,6 +47,17 @@ export const cloudRepository: CharacterRepository & {
     if (error)
       throw Object.assign(new Error(error.message), { code: error.code });
     return data as CloudCharacter | null;
+  },
+  async rename(record, name) {
+    name = name.trim();
+    if (!name || name.length > 80)
+      throw new Error("Enter a name between 1 and 80 characters.");
+    // Rename the latest saved configuration without opening its model or
+    // overwriting edits made since the library was listed.
+    const latest = await this.get(record.id);
+    const config = structuredClone(latest.config);
+    config.name = name;
+    return this.save(latest.id, latest.revision, config, latest.asset_snapshot);
   },
   async remove(document) {
     const { error } = await supabase!

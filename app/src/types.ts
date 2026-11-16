@@ -103,6 +103,7 @@ export interface Camera {
   elevation: number;
   facing: number;
   zoom: number;
+  focus?: "head";
 }
 export interface CharacterConfig {
   schemaVersion: 1;
@@ -118,6 +119,7 @@ export interface CharacterConfig {
     size: 512 | 1024;
     padding: number;
     anchor: "head" | "figure";
+    autoframe: boolean;
     offset: { x: number; y: number };
     outline: {
       enabled: boolean;

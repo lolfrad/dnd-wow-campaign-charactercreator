@@ -45,7 +45,7 @@ export function availableOptions(
   config: CharacterConfig,
   data: Bootstrap,
 ): Option[] {
-  if(config.npc)return [];
+  if (config.npc) return [];
   const { body } = modelFor(config, data);
   const options = data.options[body.modelId] ?? [];
   return options
@@ -73,7 +73,10 @@ export function normalizeAppearance(
   data: Bootstrap,
 ): CharacterConfig {
   const next = structuredClone(config);
-  if(next.npc){next.customizations={};return next;}
+  if (next.npc) {
+    next.customizations = {};
+    return next;
+  }
   const { body } = modelFor(config, data);
   const all = data.options[body.modelId] ?? [];
   next.customizations = Object.fromEntries(
@@ -99,3 +102,15 @@ export function normalizeAppearance(
     "Customization requirements did not converge. Choose another body or reset appearance.",
   );
 }
+
+/** Fixed/unnamed choices still participate in normalization, but need no UI. */
+export function editableOptions(config: CharacterConfig, data: Bootstrap) {
+  return availableOptions(config, data).filter(
+    (option) => option.name.trim() && option.choices.length > 1,
+  );
+}
+
+export const isDragonArmor = (option: Option) =>
+  /^(Chest|Shoulders|Helm|Armor Color|Breastplate|Upper Arms|Lower Arms|Breechcloth|Feet|Thighs|Waist|Wing Decoration|Armor Style)$/i.test(
+    option.name,
+  );

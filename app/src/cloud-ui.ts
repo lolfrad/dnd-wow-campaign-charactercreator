@@ -72,6 +72,7 @@ export async function showLibrary(actions: {
   create: () => Promise<void>;
   duplicate: (character: CloudCharacter) => Promise<void>;
   deleted: (id: string) => Promise<void>;
+  renamed: (character: CloudCharacter) => void;
   canClose: () => boolean;
   shared?: CloudCharacter | null;
 }) {
@@ -119,7 +120,50 @@ export async function showLibrary(actions: {
       const urls = new Map(
         (signed.data ?? []).map((item) => [item.path, item.signedUrl]),
       );
-      dialog.innerHTML = `<div class="dialog-heading"><h1>My characters</h1>${actions.canClose() ? '<button data-close aria-label="Close library">✕</button>' : ""}</div><div class="library-grid"><article><button class="library-card library-new" data-create><span class="library-placeholder">${icon("plus", 52)}</span><strong>New character</strong><small>Create a character</small></button></article>${characters.map((row) => `<article><button class="library-card" data-open="${row.id}">${urls.get(row.thumbnail_path ?? "") ? `<img src="${esc(urls.get(row.thumbnail_path!))}&v=${row.revision}" alt="" decoding="async">` : '<span class="library-placeholder">✦</span>'}<strong>${esc(row.name)}</strong><small>${row.id === shared?.id ? "Shared with you" : esc(new Date(row.updated_at).toLocaleDateString())}</small></button><div class="library-card-actions"><button class="library-duplicate" data-duplicate="${row.id}">Duplicate</button>${row.id === shared?.id ? "" : `<button class="library-delete" data-delete="${row.id}">Delete</button>`}</div></article>`).join("")}</div><div class="dialog-pagination"><button id="library-previous" class="secondary" ${page === 0 ? "disabled" : ""}>Previous</button><span>Page ${page + 1}</span><button id="library-next" class="secondary" ${rows.length < 24 ? "disabled" : ""}>Next</button></div><p class="account-error" role="alert"></p>`;
+      dialog.innerHTML = `<div class="dialog-heading"><h1>My characters</h1>${actions.canClose() ? '<button data-close aria-label="Close library">✕</button>' : ""}</div><div class="library-grid"><article><button class="library-card library-new" data-create><span class="library-placeholder">${icon("plus", 52)}</span><strong>New character</strong><small>Create a character</small></button></article>${characters.map((row) => `<article><button class="library-card" data-open="${row.id}">${urls.get(row.thumbnail_path ?? "") ? `<img src="${esc(urls.get(row.thumbnail_path!))}&v=${row.revision}" alt="" decoding="async">` : '<span class="library-placeholder">✦</span>'}<strong>${esc(row.name)}</strong><small>${row.id === shared?.id ? "Shared with you" : esc(new Date(row.updated_at).toLocaleDateString())}</small></button><div class="library-card-actions">${row.id === shared?.id ? "" : `<button class="library-rename-button" data-rename="${row.id}">Rename</button>`}<button class="library-duplicate" data-duplicate="${row.id}">Duplicate</button>${row.id === shared?.id ? "" : `<button class="library-delete" data-delete="${row.id}">Delete</button>`}</div></article>`).join("")}</div><div class="dialog-pagination"><button id="library-previous" class="secondary" ${page === 0 ? "disabled" : ""}>Previous</button><span>Page ${page + 1}</span><button id="library-next" class="secondary" ${rows.length < 24 ? "disabled" : ""}>Next</button></div><p class="account-error" role="alert"></p>`;
+      dialog
+        .querySelectorAll<HTMLButtonElement>("[data-rename]")
+        .forEach((button) => {
+          button.addEventListener("click", () => {
+            if (working || button.closest("article")!.querySelector("form"))
+              return;
+            const row = rows.find((row) => row.id === button.dataset.rename)!;
+            const form = document.createElement("form");
+            form.className = "library-rename";
+            form.innerHTML = `<input aria-label="New name for ${esc(row.name)}" value="${esc(row.name)}" maxlength="80" required><div><button class="secondary" type="submit">Save name</button><button class="secondary" type="button" data-cancel>Cancel</button></div>`;
+            const input = form.querySelector("input")!;
+            form
+              .querySelector("[data-cancel]")!
+              .addEventListener("click", () => form.remove());
+            form.addEventListener("submit", async (event) => {
+              event.preventDefault();
+              if (working) return;
+              working = true;
+              const disabled = [...dialog.querySelectorAll("button")].map(
+                (button) => [button, button.disabled] as const,
+              );
+              disabled.forEach(([button]) => (button.disabled = true));
+              input.readOnly = true;
+              try {
+                const updated = await cloudRepository.rename(row, input.value);
+                actions.renamed(updated);
+                await render();
+              } catch (error) {
+                dialog.querySelector("[role=alert]")!.textContent =
+                  error instanceof Error ? error.message : String(error);
+              } finally {
+                working = false;
+                input.readOnly = false;
+                disabled.forEach(([button, value]) => {
+                  if (button.isConnected) button.disabled = value;
+                });
+              }
+            });
+            button.closest("article")!.append(form);
+            input.focus();
+            input.select();
+          });
+        });
       dialog
         .querySelector("[data-close]")
         ?.addEventListener("click", () => dialog.close());
@@ -168,6 +212,7 @@ export async function showLibrary(actions: {
         .querySelectorAll<HTMLButtonElement>("[data-delete]")
         .forEach((button) =>
           button.addEventListener("click", async () => {
+            if (working) return;
             if (button.dataset.confirm !== "yes") {
               button.dataset.confirm = "yes";
               button.textContent = "Delete permanently";

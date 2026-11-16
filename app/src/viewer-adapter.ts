@@ -603,6 +603,15 @@ export class ViewerAdapter {
   }
   camera(camera: Camera) {
     this.center();
+    if (camera.focus === "head") {
+      const r = this.viewer.renderer,
+        head = this.headWorld();
+      if (head) r.target.set(head.slice(0, 3));
+      else {
+        const [min, max] = r.actors[0].getBounds();
+        r.target[2] = min[2] + (max[2] - min[2]) * 0.86;
+      }
+    }
     this.viewer.setZenith(
       Math.min(Math.PI - 0.0001, ((90 + camera.elevation) * Math.PI) / 180),
     );
@@ -653,14 +662,14 @@ export class ViewerAdapter {
         (!this.character || actor.getNumAnimations() > 0) &&
         this.pending === 0 &&
         Object.keys(this.viewer.renderer.downloads ?? {}).length === 0 &&
-        performance.now() - this.lastActivity > (this.catalogMode ? 40 : 300)
+        performance.now() - this.lastActivity > (this.catalogMode ? 40 : 70)
       ) {
-        if (++stable >= (this.catalogMode ? 2 : 4)) {
+        if (++stable >= (this.catalogMode ? 2 : 3)) {
           this.lastValidated = this.lastActivity;
           return;
         }
       } else stable = 0;
-      await delay(this.catalogMode ? 20 : 100);
+      await delay(this.catalogMode ? 16 : 24);
     }
     throw new Error(
       "Retail assets did not finish loading within 90 seconds. Check the connection and /api/status.",
